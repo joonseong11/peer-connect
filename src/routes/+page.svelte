@@ -78,7 +78,8 @@
 	const session = $derived(localSession);
 	let authError = $state<string | null>(data.authErrorMessage ?? null);
 	let supabase: SupabaseClient | null = null;
-	const invitesEnabled = $derived(data.invitesEnabled ?? false);
+const invitesEnabled = $derived(data.invitesEnabled ?? false);
+const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
 
 	if (browser) {
 		const initSupabaseClient = () => {
@@ -124,14 +125,16 @@
 			return;
 		}
 
-		const ensuredClient = client as SupabaseClient;
+	const ensuredClient = client as SupabaseClient;
 
-		const { error } = await ensuredClient.auth.signInWithOAuth({
-			provider: 'google',
-			options: {
-				redirectTo: `${window.location.origin}/auth/callback`
-			}
-		});
+	const nextParam = authRedirectTarget ? `?next=${encodeURIComponent(authRedirectTarget)}` : '';
+
+	const { error } = await ensuredClient.auth.signInWithOAuth({
+		provider: 'google',
+		options: {
+			redirectTo: `${window.location.origin}/auth/callback${nextParam}`
+		}
+	});
 
 		if (error) {
 			console.error('Google sign-in error', error);
@@ -295,12 +298,11 @@
 	<section class="glass-panel space-y-4 text-center md:text-left">
 		<h2 class="text-3xl font-semibold text-peer-navy">이제 Peer Connect에서 동료와 함께 성장해요</h2>
 		<p class="text-slate-600">
-			운영 초반에는 관리자 전용 초대 코드로 테스트 멤버를 초대하고, 이후 멤버 초대장을 순차적으로 열어보세요.
-			피드백을 빠르게 반영하며 이상적인 커뮤니티 경험을 만들어갈 수 있습니다.
+			초대권을 발급해 신뢰할 수 있는 동료를 초대하세요.
 		</p>
 		<div class="flex flex-wrap justify-center gap-3 pt-2 md:justify-start">
 			{#if invitesEnabled}
-				<a class="btn btn-primary" href="/invite">초대 코드 생성</a>
+				<a class="btn btn-primary" href="/invite">초대권 관리</a>
 				<a class="btn btn-secondary" href="/members">동료 프로필 보기</a>
 			{:else}
 				<a class="btn btn-primary" href="/members">동료 프로필 둘러보기</a>

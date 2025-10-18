@@ -2,10 +2,13 @@ import { redirect, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ locals, url }) => {
+	const nextParamRaw = url.searchParams.get('next');
+	const nextParam = nextParamRaw && nextParamRaw.startsWith('/') ? nextParamRaw : null;
+	const redirectSuffix = nextParam ? `?next=${encodeURIComponent(nextParam)}` : '';
 	const { data, error } = await locals.supabase.auth.signInWithOAuth({
 		provider: 'google',
 		options: {
-			redirectTo: `${url.origin}/auth/callback`
+			redirectTo: `${url.origin}/auth/callback${redirectSuffix}`
 		}
 	});
 

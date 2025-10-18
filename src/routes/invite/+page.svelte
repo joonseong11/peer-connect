@@ -23,6 +23,7 @@
 
 	let expandedSlot = $state<number | null>(form?.highlightSlot ?? null);
 	let copiedSlot = $state<number | null>(null);
+	let copyErrorSlot = $state<number | null>(null);
 	let origin = $state('');
 
 	$effect(() => {
@@ -49,20 +50,53 @@
 	};
 
 	const copyShareLink = async (slotIndex: number, shareUrl: string) => {
-		if (!shareUrl || typeof navigator === 'undefined' || !navigator.clipboard) {
+		if (!shareUrl) {
 			return;
 		}
 
-		try {
-			await navigator.clipboard.writeText(shareUrl);
+		let copied = false;
+
+		if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+			try {
+				await navigator.clipboard.writeText(shareUrl);
+				copied = true;
+			} catch (error) {
+				console.error('[invite] Failed to copy share link via clipboard API', error);
+			}
+		}
+
+		if (!copied && typeof document !== 'undefined') {
+			try {
+				const textarea = document.createElement('textarea');
+				textarea.value = shareUrl;
+				textarea.setAttribute('readonly', '');
+				textarea.style.position = 'absolute';
+				textarea.style.left = '-9999px';
+				document.body.appendChild(textarea);
+				textarea.select();
+				copied = document.execCommand('copy');
+				document.body.removeChild(textarea);
+			} catch (error) {
+				console.error('[invite] Failed to copy share link via fallback', error);
+				copied = false;
+			}
+		}
+
+		if (copied) {
+			copyErrorSlot = null;
 			copiedSlot = slotIndex;
 			setTimeout(() => {
 				if (copiedSlot === slotIndex) {
 					copiedSlot = null;
 				}
 			}, 2400);
-		} catch (error) {
-			console.error('[invite] Failed to copy share link', error);
+		} else {
+			copyErrorSlot = slotIndex;
+			setTimeout(() => {
+				if (copyErrorSlot === slotIndex) {
+					copyErrorSlot = null;
+				}
+			}, 2400);
 		}
 	};
 
@@ -175,24 +209,24 @@
 							class={`flex h-full flex-col gap-4 rounded-3xl border p-5 transition-all ${
 								card.invite
 									? card.state === 'fulfilled'
-										? 'border-slate-900 bg-slate-900 text-slate-100'
+										? 'border-slate-300 bg-slate-100 text-slate-600'
 										: card.state === 'unlimited'
 											? 'border-peer-indigo/60 bg-gradient-to-br from-peer-indigo/20 via-white to-peer-sky/10 text-peer-navy'
 											: 'border-slate-200/60 bg-white/90 text-peer-navy shadow-sm'
 									: 'border-dashed border-peer-indigo/40 bg-white/70 text-peer-navy shadow-sm'
 							} ${
-								isExpanded(card.slot.index) ? 'ring-2 ring-peer-indigo/30' : ''
-							}`}
-						>
-							<header class="flex flex-col gap-2">
+							isExpanded(card.slot.index) ? 'ring-2 ring-peer-indigo/30' : ''
+						}`}
+					>
+						<header class="flex flex-col gap-2">
 								<div class="flex items-center justify-between gap-3">
 									<h3 class="text-lg font-semibold">{card.slot.title}</h3>
 									<span
 										class={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
 											card.state === 'fulfilled'
-												? 'bg-slate-800 text-slate-100'
+												? 'bg-slate-300 text-slate-600'
 												: card.state === 'unlimited'
-													? 'bg-peer-indigo/20 text-peer-indigo'
+													? 'bg-gradient-to-r from-peer-indigo/20 to-peer-sky/20 text-peer-indigo'
 													: card.invite
 														? 'bg-peer-indigo/10 text-peer-indigo'
 														: 'bg-slate-200/80 text-slate-600'
@@ -208,7 +242,11 @@
 								{@const shareUrl = shareUrlFor(card.invite.code)}
 								<button
 									type="button"
-									class="inline-flex items-center justify-between rounded-2xl border border-transparent bg-white/40 px-4 py-3 text-sm font-semibold text-peer-indigo shadow-inner transition hover:-translate-y-0.5 hover:border-peer-indigo/30 focus:outline-none focus:ring-2 focus:ring-peer-indigo/30 disabled:cursor-not-allowed disabled:opacity-60"
+									class={`inline-flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-semibold shadow-inner transition focus:outline-none focus:ring-2 focus:ring-peer-indigo/30 disabled:cursor-not-allowed ${
+										card.state === 'fulfilled'
+											? 'border-slate-300 bg-slate-200 text-slate-600 hover:-translate-y-0.5 hover:border-slate-400'
+											: 'border-transparent bg-white/40 text-peer-indigo hover:-translate-y-0.5 hover:border-peer-indigo/30'
+									}`}
 									onclick={() => toggleCard(card.slot.index)}
 								>
 									<span>
@@ -234,27 +272,39 @@
 											</p>
 										</div>
 										{#if shareUrl}
-											<div class="space-y-2">
+											<div class={`space-y-2 ${card.state === 'fulfilled' ? 'text-slate-500' : ''}`}>
 												<h4 class="text-xs font-semibold uppercase tracking-wide text-slate-400">
 													공유 링크
 												</h4>
 												<div class="flex flex-wrap items-center gap-2">
 													<input
-														class="flex-1 min-w-[220px] rounded-2xl border border-slate-300/60 bg-slate-50 px-3 py-2 text-xs text-slate-600"
+														class={`flex-1 min-w-[220px] rounded-2xl border px-3 py-2 text-xs ${
+															card.state === 'fulfilled'
+																? 'border-slate-300 bg-slate-100 text-slate-600'
+																: 'border-slate-300/60 bg-slate-50 text-slate-600'
+														}`}
 														type="text"
 														readonly
 														value={shareUrl}
 													/>
 													<button
 														type="button"
-														class="rounded-full bg-peer-indigo px-4 py-2 text-xs font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-peer-indigo/90 focus:outline-none focus:ring-2 focus:ring-peer-indigo/40"
+														class={`rounded-full px-4 py-2 text-xs font-semibold text-white shadow transition focus:outline-none focus:ring-2 ${
+															card.state === 'fulfilled'
+																? 'bg-slate-400 focus:ring-slate-300/60'
+																: 'bg-peer-indigo hover:-translate-y-0.5 hover:bg-peer-indigo/90 focus:ring-peer-indigo/40'
+														}`}
 														onclick={() => copyShareLink(card.slot.index, shareUrl)}
+														disabled={card.state === 'fulfilled'}
 													>
 														복사
 													</button>
 												</div>
-												{#if copiedSlot === card.slot.index}
+												{#if copiedSlot === card.slot.index && card.state !== 'fulfilled'}
 													<p class="text-xs font-semibold text-emerald-600">클립보드에 복사되었습니다.</p>
+												{/if}
+												{#if copyErrorSlot === card.slot.index}
+													<p class="text-xs font-semibold text-rose-500">복사에 실패했어요. 링크를 직접 선택해 주세요.</p>
 												{/if}
 											</div>
 										{/if}
@@ -267,7 +317,13 @@
 													총 {card.redemptionCount}명의 멤버에게 공유되었습니다.
 												</p>
 											{:else}
-												<p class="rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
+												<p
+													class={`rounded-2xl px-3 py-2 text-xs font-semibold ${
+														card.state === 'fulfilled'
+															? 'bg-slate-200 text-slate-600'
+															: 'bg-slate-100 text-slate-600'
+													}`}
+												>
 													사용 {card.redemptionCount}/{card.invite.max_redemptions ?? 1}회
 												</p>
 											{/if}
@@ -278,16 +334,34 @@
 												<h4 class="text-xs font-semibold uppercase tracking-wide text-slate-400">
 													초대한 동료
 												</h4>
-												<ul class="space-y-2 text-xs text-slate-500">
+												<ul
+													class={`space-y-2 text-xs text-slate-500`}
+												>
 													{#each card.redemptions as redemption}
-														<li class="rounded-2xl border border-slate-200/60 bg-slate-50 px-3 py-2">
-															<div class="font-semibold text-peer-navy">
+														<li
+															class={`rounded-2xl border px-3 py-2 ${
+																card.state === 'fulfilled'
+																	? 'border-slate-300 bg-slate-100 text-slate-600'
+																	: 'border-slate-200/60 bg-slate-50 text-peer-navy'
+															}`}
+														>
+															<div
+																class={`font-semibold ${
+																	card.state === 'fulfilled' ? 'text-slate-600' : 'text-peer-navy'
+																}`}
+															>
 																{redemption.invitee?.full_name ?? '알 수 없는 동료'}
 																{#if redemption.invitee?.role}
-																	<span class="text-[10px] text-slate-400"> · {redemption.invitee.role}</span>
+																	<span class="text-[10px] text-slate-400">
+																		{' '}
+																		· {redemption.invitee.role}
+																	</span>
 																{/if}
 															</div>
-															<time class="text-[10px] text-slate-400" datetime={redemption.redeemed_at}>
+															<time
+																class="text-[10px] text-slate-400"
+																datetime={redemption.redeemed_at}
+															>
 																{new Date(redemption.redeemed_at).toLocaleString('ko-KR')}
 															</time>
 														</li>

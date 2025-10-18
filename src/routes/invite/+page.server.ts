@@ -6,6 +6,7 @@ import {
 	INVITE_UNLIMITED_USER_IDS,
 	INVITE_FALLBACK_CODE
 } from '$lib/config';
+import type { Session } from '@supabase/supabase-js';
 import type { Actions, PageServerLoad } from './$types';
 
 type InviteSlotDefinition = {
@@ -111,6 +112,25 @@ const createInviteCode = () => {
 	return crypto.randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase();
 };
 
+type RedeemErrorReason = 'invalid' | 'already-used' | 'already-linked' | 'generic';
+
+type RedeemResult =
+	| { success: true; redirectTo: string }
+	| { success: false; status: number; message: string; reason: RedeemErrorReason };
+
+const mapRedeemReasonToStatus = (reason: RedeemErrorReason) => {
+	switch (reason) {
+		case 'already-used':
+			return 'redeem-used';
+		case 'already-linked':
+			return 'redeem-linked';
+		case 'invalid':
+			return 'invalid';
+		default:
+			return 'redeem-error';
+	}
+};
+
 const buildStatusMessage = (status: string | null, code: string | null) => {
 	if (status === 'generated' && code) {
 		return `새 초대 코드가 생성되었습니다: ${code}`;
@@ -120,6 +140,15 @@ const buildStatusMessage = (status: string | null, code: string | null) => {
 	}
 	if (status === 'invalid') {
 		return '초대 코드를 확인할 수 없습니다. 다시 시도해주세요.';
+	}
+	if (status === 'redeem-used') {
+		return '이미 사용된 초대 코드입니다. 다른 초대 링크를 요청해주세요.';
+	}
+	if (status === 'redeem-linked') {
+		return '이미 초대 코드와 연결되어 있습니다.';
+	}
+	if (status === 'redeem-error') {
+		return '초대 코드를 처리하지 못했습니다. 잠시 후 다시 시도해주세요.';
 	}
 	return null;
 };
@@ -238,6 +267,252 @@ const fetchInviteCards = async (
 	return { cards, activeCount };
 };
 
+const redeemInviteCode = async ({
+	locals,
+	session,
+	code
+}: {
+	locals: App.Locals;
+	session: Session;
+	code: string;
+}): Promise<RedeemResult> => {
+	const normalizedCode = normalizeCode(code);
+
+	if (!normalizedCode) {
+		return {
+			success: false,
+			status: 400,
+			message: '초대 코드를 입력해주세요.',
+			reason: 'invalid'
+		};
+	}
+
+	const { data: existingRedeemed } = await locals.supabase
+		.from('invite_redemptions')
+		.select('id')
+		.eq('invitee_user_id', session.user.id)
+		.maybeSingle();
+
+	if (existingRedeemed) {
+		return {
+			success: false,
+			status: 400,
+			message: '이미 초대 코드와 연결되어 있습니다.',
+			reason: 'already-linked'
+		};
+	}
+
+	if (INVITE_FALLBACK_CODE && normalizedCode === INVITE_FALLBACK_CODE) {
+		const {
+			count: totalRedemptions
+		} = await locals.supabase
+			.from('invite_redemptions')
+			.select('id', { count: 'exact', head: true });
+
+		if ((totalRedemptions ?? 0) > 0) {
+			return {
+				success: false,
+				status: 400,
+				message: '이미 사용된 초대 코드입니다.',
+				reason: 'already-used'
+			};
+		}
+
+		const {
+			data: existingFallbackInvite,
+			error: fallbackLookupError
+		} = await locals.supabase
+			.from('invites')
+			.select('id, deactivated_at')
+			.eq('code', normalizedCode)
+			.maybeSingle();
+
+		if (fallbackLookupError) {
+			console.error('Failed to lookup fallback invite', fallbackLookupError);
+			return {
+				success: false,
+				status: 500,
+				message: '초대 코드를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.',
+				reason: 'generic'
+			};
+		}
+
+		let fallbackInviteId = existingFallbackInvite?.id
+			? String(existingFallbackInvite.id)
+			: null;
+
+		if (!fallbackInviteId) {
+			const {
+				data: insertedFallback,
+				error: insertFallbackError
+			} = await locals.supabase
+				.from('invites')
+				.insert({
+					code: normalizedCode,
+					inviter_user_id: null,
+					slot_index: 0,
+					max_redemptions: 1,
+					beta_unlimited: false
+				})
+				.select('id')
+				.single();
+
+			if (insertFallbackError) {
+				console.error('Failed to create fallback invite', insertFallbackError);
+				return {
+					success: false,
+					status: 500,
+					message: '초대 코드를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.',
+					reason: 'generic'
+				};
+			}
+
+			fallbackInviteId = String(insertedFallback.id);
+		}
+
+		const {
+			count: fallbackUsageCount
+		} = await locals.supabase
+			.from('invite_redemptions')
+			.select('id', { head: true, count: 'exact' })
+			.eq('invite_id', fallbackInviteId);
+
+		if ((fallbackUsageCount ?? 0) > 0) {
+			return {
+				success: false,
+				status: 400,
+				message: '이미 사용된 초대 코드입니다.',
+				reason: 'already-used'
+			};
+		}
+
+		const { error: fallbackRedeemError } = await locals.supabase
+			.from('invite_redemptions')
+			.insert({
+				invite_id: fallbackInviteId,
+				invitee_user_id: session.user.id
+			});
+
+		if (fallbackRedeemError) {
+			console.error('Failed to redeem fallback invite', fallbackRedeemError);
+			return {
+				success: false,
+				status: 500,
+				message: '초대 코드를 연결하지 못했습니다. 잠시 후 다시 시도해주세요.',
+				reason: 'generic'
+			};
+		}
+
+		const nowIso = new Date().toISOString();
+		const { error: fallbackDeactivateError } = await locals.supabase
+			.from('invites')
+			.update({ deactivated_at: nowIso })
+			.eq('id', fallbackInviteId)
+			.is('deactivated_at', null);
+
+		if (fallbackDeactivateError) {
+			console.error('Failed to deactivate fallback invite', fallbackDeactivateError);
+		}
+
+		return {
+			success: true,
+			redirectTo: '/profile?onboarding=seed'
+		};
+	}
+
+	const {
+		data: invite,
+		error: inviteError
+	} = await locals.supabase
+		.from('invites')
+		.select(
+			'id, code, inviter_user_id, slot_index, max_redemptions, beta_unlimited, deactivated_at, invite_redemptions(id)'
+		)
+		.eq('code', normalizedCode)
+		.maybeSingle();
+
+	if (inviteError) {
+		console.error('Failed to lookup invite by code', inviteError);
+		return {
+			success: false,
+			status: 500,
+			message: '초대 코드를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.',
+			reason: 'generic'
+		};
+	}
+
+	if (!invite) {
+		return {
+			success: false,
+			status: 400,
+			message: '초대 코드를 찾을 수 없습니다.',
+			reason: 'invalid'
+		};
+	}
+
+	const redemptionCount = invite.invite_redemptions?.length ?? 0;
+	const isUnlimited =
+		invite.beta_unlimited || invite.max_redemptions === null || (invite.max_redemptions ?? 0) < 0;
+	const maxRedemptions = invite.max_redemptions ?? null;
+
+	if (
+		!isUnlimited &&
+		((maxRedemptions !== null && redemptionCount >= maxRedemptions) || Boolean(invite.deactivated_at))
+	) {
+		return {
+			success: false,
+			status: 400,
+			message: '이미 사용된 초대 코드입니다.',
+			reason: 'already-used'
+		};
+	}
+
+	const { error: insertError } = await locals.supabase.from('invite_redemptions').insert({
+		invite_id: invite.id,
+		invitee_user_id: session.user.id
+	});
+
+	if (insertError) {
+		console.error('Failed to redeem invite', insertError);
+		return {
+			success: false,
+			status: 500,
+			message: '초대 코드를 연결하지 못했습니다. 이미 사용되었을 수 있어요.',
+			reason: 'generic'
+		};
+	}
+
+	if (!isUnlimited && maxRedemptions !== null) {
+		const usesAfter = redemptionCount + 1;
+		if (usesAfter >= maxRedemptions) {
+			const nowIso = new Date().toISOString();
+			const { error: deactivateError } = await locals.supabase
+				.from('invites')
+				.update({ deactivated_at: nowIso })
+				.eq('id', invite.id)
+				.is('deactivated_at', null);
+
+			if (deactivateError) {
+				console.error('Failed to deactivate invite after redemption', deactivateError);
+			}
+		}
+	}
+
+	if (!invite.inviter_user_id) {
+		return {
+			success: false,
+			status: 500,
+			message: '초대한 사용자를 찾을 수 없습니다.',
+			reason: 'generic'
+		};
+	}
+
+	return {
+		success: true,
+		redirectTo: `/members/${invite.inviter_user_id}?endorsementStatus=prompt`
+	};
+};
+
 const ensureInviteSlot = (slotIndex: number, slots: InviteSlotDefinition[]) => {
 	const slot = slots.find((candidate) => candidate.index === slotIndex);
 	if (!slot) {
@@ -249,10 +524,35 @@ const ensureInviteSlot = (slotIndex: number, slots: InviteSlotDefinition[]) => {
 const requiresLinkedInviteMessage =
 	'먼저 초대 코드를 연결해야 초대장을 사용할 수 있어요.';
 
-export const load: PageServerLoad = async ({ locals, url }) => {
+export const load: PageServerLoad = async ({ locals, url, cookies }) => {
+	const codeParamFromUrl = url.searchParams.get('code');
+	if (codeParamFromUrl) {
+		cookies.set('pending_invite_code', codeParamFromUrl, {
+			path: '/',
+			maxAge: 60 * 60,
+			httpOnly: true,
+			sameSite: 'lax'
+		});
+	}
+
 	const session = await locals.getSession();
+	const pendingInviteCookie = cookies.get('pending_invite_code');
 
 	if (!session) {
+		const redirectTarget = (() => {
+			if (codeParamFromUrl) {
+				return `${url.pathname}${url.search}`;
+			}
+			if (pendingInviteCookie) {
+				return `/invite?code=${encodeURIComponent(pendingInviteCookie)}`;
+			}
+			return null;
+		})();
+
+		if (redirectTarget) {
+			throw redirect(303, `/?authRedirect=${encodeURIComponent(redirectTarget)}`);
+		}
+
 		throw redirect(303, '/?authError=signin-required');
 	}
 
@@ -314,12 +614,29 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		}
 	}
 
+	const pendingCode = redeemedInvite ? null : codeParamFromUrl ?? pendingInviteCookie ?? null;
+
+	if (pendingCode) {
+		const redeemResult = await redeemInviteCode({ locals, session, code: pendingCode });
+		cookies.delete('pending_invite_code', { path: '/' });
+		if (redeemResult.success) {
+			throw redirect(303, redeemResult.redirectTo);
+		}
+
+		const params = new URLSearchParams(url.searchParams);
+		params.delete('code');
+		params.set('status', mapRedeemReasonToStatus(redeemResult.reason));
+		const nextQuery = params.toString();
+		throw redirect(303, `${url.pathname}${nextQuery ? `?${nextQuery}` : ''}`);
+	} else if (pendingInviteCookie) {
+		cookies.delete('pending_invite_code', { path: '/' });
+	}
+
 	const slots = buildInviteSlots(session.user.id);
 	const { cards, activeCount } = await fetchInviteCards(locals, session.user.id, slots);
 
 	const statusParam = url.searchParams.get('status');
-	const codeParam = url.searchParams.get('code');
-	const statusMessage = buildStatusMessage(statusParam, codeParam);
+	const statusMessage = buildStatusMessage(statusParam, codeParamFromUrl);
 
 	return {
 		session,
@@ -463,181 +780,15 @@ export const actions: Actions = {
 			});
 		}
 
-		const { data: existingRedeemed } = await locals.supabase
-			.from('invite_redemptions')
-			.select('id')
-			.eq('invitee_user_id', session.user.id)
-			.maybeSingle();
+		const result = await redeemInviteCode({ locals, session, code });
 
-		if (existingRedeemed) {
-			return fail(400, {
+		if (!result.success) {
+			return fail(result.status, {
 				success: false,
-				redeemError: '이미 초대 코드와 연결되어 있습니다.'
+				redeemError: result.message
 			});
 		}
 
-		if (INVITE_FALLBACK_CODE && code === INVITE_FALLBACK_CODE) {
-			const { count: redemptionCount } = await locals.supabase
-				.from('invite_redemptions')
-				.select('id', { count: 'exact', head: true });
-
-			if ((redemptionCount ?? 0) > 0) {
-				return fail(400, {
-					success: false,
-					redeemError: '이미 커뮤니티가 열려 있어 이 코드를 사용할 수 없습니다.'
-				});
-			}
-
-			const {
-				data: existingFallbackInvite,
-				error: fallbackLookupError
-			} = await locals.supabase
-				.from('invites')
-				.select('id, deactivated_at')
-				.eq('code', INVITE_FALLBACK_CODE)
-				.maybeSingle();
-
-			if (fallbackLookupError) {
-				console.error('Failed to lookup fallback invite', fallbackLookupError);
-				return fail(500, {
-					success: false,
-					redeemError: '초대 코드를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.'
-				});
-			}
-
-			let fallbackInviteId: string | null = existingFallbackInvite?.id
-				? String(existingFallbackInvite.id)
-				: null;
-
-			if (!fallbackInviteId) {
-				const {
-					data: insertedFallback,
-					error: insertFallbackError
-				} = await locals.supabase
-					.from('invites')
-					.insert({
-						code: INVITE_FALLBACK_CODE,
-						inviter_user_id: null,
-						slot_index: 0,
-						max_redemptions: 1,
-						beta_unlimited: false
-					})
-					.select('id')
-					.single();
-
-				if (insertFallbackError) {
-					console.error('Failed to create fallback invite', insertFallbackError);
-					return fail(500, {
-						success: false,
-						redeemError: '초대 코드를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.'
-					});
-				}
-
-				fallbackInviteId = String(insertedFallback.id);
-			}
-
-			if (!fallbackInviteId) {
-				return fail(500, {
-					success: false,
-					redeemError: '초대 코드를 처리하지 못했습니다.'
-				});
-			}
-
-			const {
-				count: fallbackUsageCount
-			} = await locals.supabase
-				.from('invite_redemptions')
-				.select('id', {
-					head: true,
-					count: 'exact'
-				})
-				.eq('invite_id', fallbackInviteId);
-
-			if ((fallbackUsageCount ?? 0) > 0) {
-				return fail(400, {
-					success: false,
-					redeemError: '이미 사용된 초대 코드입니다.'
-				});
-			}
-
-			const { error: fallbackRedeemError } = await locals.supabase
-				.from('invite_redemptions')
-				.insert({
-					invite_id: fallbackInviteId,
-					invitee_user_id: session.user.id
-				});
-
-			if (fallbackRedeemError) {
-				console.error('Failed to redeem fallback invite', fallbackRedeemError);
-				return fail(500, {
-					success: false,
-					redeemError: '초대 코드를 연결하지 못했습니다. 잠시 후 다시 시도해주세요.'
-				});
-			}
-
-			const nowIso = new Date().toISOString();
-			const { error: fallbackDeactivateError } = await locals.supabase
-				.from('invites')
-				.update({ deactivated_at: nowIso })
-				.eq('id', fallbackInviteId)
-				.is('deactivated_at', null);
-
-			if (fallbackDeactivateError) {
-				console.error('Failed to deactivate fallback invite', fallbackDeactivateError);
-			}
-
-			throw redirect(303, '/profile?onboarding=seed');
-		}
-
-		const {
-			data: invite,
-			error: inviteError
-		} = await locals.supabase
-			.from('invites')
-			.select(
-				'id, code, inviter_user_id, slot_index, max_redemptions, beta_unlimited, deactivated_at, invite_redemptions(id)'
-			)
-			.eq('code', code)
-			.maybeSingle();
-
-		if (inviteError) {
-			console.error('Failed to lookup invite by code', inviteError);
-		}
-
-		if (!invite) {
-			return fail(400, {
-				success: false,
-				redeemError: '초대 코드를 찾을 수 없습니다.'
-			});
-		}
-
-		const redemptionCount = invite.invite_redemptions?.length ?? 0;
-		const isUnlimited =
-			invite.beta_unlimited ||
-			invite.max_redemptions === null ||
-			(invite.max_redemptions ?? 0) < 0;
-		const maxRedemptions = invite.max_redemptions ?? null;
-
-		if (!isUnlimited && maxRedemptions !== null && redemptionCount >= maxRedemptions) {
-			return fail(400, {
-				success: false,
-				redeemError: '이미 모두 사용된 초대 코드입니다.'
-			});
-		}
-
-		const { error: insertError } = await locals.supabase.from('invite_redemptions').insert({
-			invite_id: invite.id,
-			invitee_user_id: session.user.id
-		});
-
-		if (insertError) {
-			console.error('Failed to redeem invite', insertError);
-			return fail(500, {
-				success: false,
-				redeemError: '초대 코드를 연결하지 못했습니다. 이미 사용되었을 수 있어요.'
-			});
-		}
-
-		throw redirect(303, `/members/${invite.inviter_user_id}?endorsementStatus=prompt`);
+		throw redirect(303, result.redirectTo);
 	}
 };

@@ -17,6 +17,7 @@ declare global {
 				inviter_user_id: string | null;
 			} | null;
 			authErrorMessage?: string | null;
+			authRedirectTarget?: string | null;
 			invitesEnabled?: boolean;
 		}
 		// interface PageState {}
