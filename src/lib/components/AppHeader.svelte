@@ -5,9 +5,15 @@
 
 	const { session } = $props<{ session: Session | null }>();
 
-	const navItems = [
+	const authedNavItems = [
 		{ href: '/members', label: '멤버' },
 		{ href: '/gatherings', label: '모임 라운지' }
+	];
+
+	const guestNavItems = [
+		{ href: '#features', label: '서비스 소개' },
+		{ href: '#profiles', label: '프로필 미리보기' },
+		{ href: '#gatherings', label: '모임 라운지' }
 	];
 
 	const loginActionStore = derived(page, ($page) => {
@@ -28,16 +34,24 @@
 		<div class="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-6">
 			<a class="text-lg font-bold text-peer-navy" href="/">Peer Connect</a>
 			<nav class="flex items-center gap-3 text-sm font-semibold text-slate-600">
-				{#each navItems as item}
-					<a
-						href={item.href}
-						class={`rounded-full px-3 py-1 transition hover:text-peer-indigo hover:underline ${
-							$page.url.pathname.startsWith(item.href) ? 'text-peer-indigo' : ''
-						}`}
-					>
-						{item.label}
-					</a>
-				{/each}
+				{#if session}
+					{#each authedNavItems as item}
+						<a
+							href={item.href}
+							class={`rounded-full px-3 py-1 transition hover:text-peer-indigo hover:underline ${
+								$page.url.pathname.startsWith(item.href) ? 'text-peer-indigo' : ''
+							}`}
+						>
+							{item.label}
+						</a>
+					{/each}
+				{:else}
+					{#each guestNavItems as item}
+						<a href={item.href} class="rounded-full px-3 py-1 transition hover:text-peer-indigo hover:underline">
+							{item.label}
+						</a>
+					{/each}
+				{/if}
 			</nav>
 		</div>
 		<div class="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-4">

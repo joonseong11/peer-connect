@@ -152,7 +152,7 @@ const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
 </svelte:head>
 
 <main class="mx-auto flex w-full max-w-5xl flex-col gap-14 px-5 pb-20 pt-16 sm:px-8 lg:gap-16">
-	<section class="glass-panel grid gap-10 md:grid-cols-2 md:items-center lg:p-12">
+	<section id="intro" class="glass-panel grid gap-10 md:grid-cols-2 md:items-center lg:p-12">
 		<div class="space-y-5">
 			<p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">PEER CONNECT</p>
 			<h1 class="text-3xl leading-tight text-peer-navy sm:text-4xl">
@@ -168,7 +168,7 @@ const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
 					<a class="btn btn-secondary" href="/members">동료 프로필 둘러보기</a>
 				{:else}
 					<button class="btn btn-primary" onclick={handleGoogleSignIn}>Google 계정으로 시작하기</button>
-					<a class="btn btn-secondary" href="/members">동료 프로필 둘러보기</a>
+					<a class="btn btn-secondary" href="#features">서비스 소개 보기</a>
 				{/if}
 			</div>
 			{#if authError}
@@ -190,7 +190,7 @@ const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
 		</div>
 	</section>
 
-	<section class="grid gap-6 md:grid-cols-3">
+	<section id="features" class="grid gap-6 md:grid-cols-3">
 		{#each featureHighlights as feature}
 			<article class="glass-panel space-y-3 p-8 sm:p-9">
 				<h3 class="text-xl font-semibold text-peer-navy">{feature.title}</h3>
@@ -214,7 +214,7 @@ const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
 		</div>
 	</section>
 
-	<section class="glass-panel grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+	<section id="profiles" class="glass-panel grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
 		<div class="space-y-4">
 			<h2 class="text-3xl font-semibold text-peer-navy">나를 보여주는 프로필</h2>
 			<p class="text-slate-600">
@@ -275,7 +275,7 @@ const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
 		</div>
 	</section>
 
-	<section class="glass-panel grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+	<section id="gatherings" class="glass-panel grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
 		<div class="space-y-4">
 			<h2 class="text-3xl font-semibold text-peer-navy">모임 라운지</h2>
 			<p class="text-slate-600">
@@ -283,7 +283,14 @@ const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
 				누구나 모임 라운지에 글을 작성하고 수정할 수 있으며, <strong class="font-semibold text-peer-navy">등록된 글은 알림을 허락한 모든 멤버에게 이메일로 안내됩니다.</strong>
 			</p>
 			<div class="pt-2">
-				<a class="btn btn-primary" href="/gatherings">모임 라운지 살펴보기</a>
+				{#if session}
+					<a class="btn btn-primary" href="/gatherings">모임 라운지 살펴보기</a>
+				{:else}
+					<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+						<button class="btn btn-primary" type="button" onclick={handleGoogleSignIn}>Google 로그인 후 모임 살펴보기</button>
+						<p class="text-sm text-slate-500 sm:ml-1 sm:mt-0">모임 라운지는 인증된 멤버 전용 공간입니다.</p>
+					</div>
+				{/if}
 			</div>
 		</div>
 		<ul class="grid gap-3">
@@ -301,13 +308,20 @@ const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
 			초대권을 발급해 신뢰할 수 있는 동료를 초대하세요.
 		</p>
 		<div class="flex flex-wrap justify-center gap-3 pt-2 md:justify-start">
-			{#if invitesEnabled}
-				<a class="btn btn-primary" href="/invite">초대권 관리</a>
-				<a class="btn btn-secondary" href="/members">동료 프로필 보기</a>
+			{#if session}
+				{#if invitesEnabled}
+					<a class="btn btn-primary" href="/invite">초대권 관리</a>
+					<a class="btn btn-secondary" href="/members">동료 프로필 보기</a>
+				{:else}
+					<a class="btn btn-primary" href="/members">동료 프로필 둘러보기</a>
+					<a class="btn btn-secondary" href="/profile">내 프로필 작성하기</a>
+				{/if}
 			{:else}
-				<a class="btn btn-primary" href="/members">동료 프로필 둘러보기</a>
-				<a class="btn btn-secondary" href="/profile">내 프로필 작성하기</a>
-			{/if}
-		</div>
+			<div class="flex items-center gap-4">
+				<button class="btn btn-primary" type="button" onclick={handleGoogleSignIn}>Google 로그인하고 시작하기</button>
+				<span class="text-sm text-slate-500">초대장을 받았다면 로그인 후 가입을 완료할 수 있어요.</span>
+			</div>
+				{/if}
+			</div>
 	</section>
 </main>
