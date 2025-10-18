@@ -1,0 +1,98 @@
+@import '@fontsource/fira-mono';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	body {
+		@apply m-0 min-h-screen bg-peer-body bg-fixed bg-[length:100vw_100vh] font-sans text-peer-slate antialiased;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4 {
+		@apply font-bold text-peer-navy;
+	}
+
+	p {
+		@apply leading-relaxed;
+	}
+
+	a {
+		@apply text-peer-indigo no-underline transition hover:underline;
+	}
+
+	pre {
+		@apply overflow-x-auto rounded-md bg-white/60 p-4 font-mono text-base text-peer-slate shadow;
+	}
+
+	input,
+	button,
+	textarea {
+		font: inherit;
+	}
+
+	button:focus:not(:focus-visible) {
+		outline: none;
+	}
+
+	.visually-hidden {
+		border: 0;
+		clip: rect(0 0 0 0);
+		height: auto;
+		margin: 0;
+		overflow: hidden;
+		padding: 0;
+		position: absolute;
+		width: 1px;
+		white-space: nowrap;
+	}
+}
+
+@layer components {
+	.glass-panel {
+		@apply rounded-3xl border border-slate-200/60 bg-white/90 p-10 shadow-glass backdrop-blur-2xl;
+	}
+
+	.glass-panel-lg {
+		@apply rounded-3xl border border-slate-200/60 bg-white/90 p-10 shadow-glassLg backdrop-blur-2xl;
+	}
+
+	.btn {
+		@apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-peer-indigo/60 focus-visible:ring-offset-2;
+	}
+
+	.btn-primary {
+		@apply bg-gradient-to-br from-peer-sky to-peer-indigo text-peer-navy shadow-[0_12px_30px_rgba(148,163,184,0.35)] hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(99,102,241,0.35)];
+	}
+
+	.btn-secondary {
+		@apply border border-slate-300/70 bg-transparent text-slate-800 hover:-translate-y-0.5 hover:border-slate-400;
+	}
+
+	.btn-ghost {
+		@apply border border-slate-200/60 bg-slate-50/90 text-peer-navy;
+	}
+
+	.btn-requires-auth {
+		@apply border border-dashed border-slate-400/70 bg-slate-200/40;
+	}
+
+	.badge-accent {
+		@apply inline-flex items-center rounded-xl bg-rose-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-widest text-rose-500;
+	}
+
+	.badge-step {
+		@apply flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-100 text-base font-bold text-indigo-600;
+	}
+
+	.preview-card {
+		@apply flex max-w-xs flex-col gap-3 rounded-3xl border border-sky-200/60 bg-sky-50/90 p-8 text-slate-800;
+	}
+
+	.comment-bubble {
+		@apply rounded-2xl border border-indigo-200/70 bg-indigo-50/70 p-4 text-indigo-900;
+	}
+}
