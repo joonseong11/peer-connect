@@ -65,15 +65,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 		});
 	}
 
-	const profiles = (data as ProfileRow[])
-		.filter((profile) => profile.user_id !== session.user.id)
-		.map((rest) => ({
-			...rest,
-			introduction: rest.introduction ?? '',
-			photo_url: rest.photo_url ?? null,
-			endorsement_count: endorsementsByTarget.get(rest.user_id)?.count ?? 0,
-			first_endorsement: endorsementsByTarget.get(rest.user_id)?.firstContent ?? null
-		}));
+        const profiles = (data as ProfileRow[]).map((rest) => ({
+                ...rest,
+                introduction: rest.introduction ?? '',
+                photo_url: rest.photo_url ?? null,
+                endorsement_count: endorsementsByTarget.get(rest.user_id)?.count ?? 0,
+                first_endorsement: endorsementsByTarget.get(rest.user_id)?.firstContent ?? null
+        }));
 
 	return {
 		session,
