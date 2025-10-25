@@ -183,6 +183,25 @@ alter table public.profiles
 
 서비스 운영 중 컬럼을 추가하는 경우, 기본값이 적용되도록 `NOT NULL` 제약과 `DEFAULT true`를 함께 지정해야 합니다.
 
+### Backfilling Profile Emails
+
+프로필을 한 번도 저장하지 않아 `profiles.email`이 비어 있는 기존 회원도 알림 메일을 받아야 한다면 아래 스크립트를 실행하세요. Supabase 서비스 역할 키가 필요합니다.
+
+```bash
+# 변경 사항 미리보기
+pnpm backfill:profile-emails -- --dry-run
+
+# 실제 업데이트 실행
+pnpm backfill:profile-emails
+```
+
+스크립트는 다음 규칙으로 `profiles`를 정리합니다.
+
+- `auth.users`의 OAuth 이메일을 읽어 정규화한 뒤 `profiles.email`이 비었거나 다른 값을 갖고 있으면 덮어씁니다.
+- 기존 `profiles.email` 값이 있었고 `contact_email`이 비어 있을 때만 이전 값을 `contact_email`로 백업합니다. `contact_email`은 멤버 간 연락처용으로만 쓰이며, 알림 발송 주소는 항상 OAuth 이메일로 잠궈둡니다.
+
+`--dry-run` 옵션을 쓰면 변동 대상과 개수가 로그로 표시되고 DB에는 쓰지 않습니다.
+
 ### Account Deletion
 
 회원 탈퇴 기능은 Supabase 인증 사용자를 제거해야 하므로 `SUPABASE_SERVICE_ROLE_KEY` 환경 변수가 설정되어 있어야 합니다. 서비스 역할 키 없이 애플리케이션을 실행하면 탈퇴 요청이 거부됩니다.

@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { hasProfileEmailColumn } from '$lib/server/profileEmailColumn';
+import { normalizeEmail } from '$lib/utils/normalizeEmail';
 
 const PROFILE_FIELDS = [
 	'full_name',
@@ -164,9 +165,9 @@ export const actions: Actions = {
 			updated_at: new Date().toISOString()
 		};
 
-		if (emailColumnAvailable) {
-			payload.email = session.user.email ?? null;
-		}
+                if (emailColumnAvailable) {
+                        payload.email = normalizeEmail(session.user.email ?? null);
+                }
 
 		const { error } = await locals.supabase.from('profiles').upsert(payload, {
 			onConflict: 'user_id'

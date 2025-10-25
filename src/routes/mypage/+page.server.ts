@@ -1,6 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getSupabaseAdminClient } from '$lib/server/supabaseAdmin';
+import { hasProfileEmailColumn } from '$lib/server/profileEmailColumn';
 import { INVITES_ENABLED } from '$lib/config';
+import { normalizeEmail } from '$lib/utils/normalizeEmail';
 import type { Actions, PageServerLoad } from './$types';
 
 type NotificationPreferences = {
@@ -114,16 +116,22 @@ export const actions: Actions = {
 			throw redirect(303, '/?authError=signin-required');
 		}
 
-		const formData = await request.formData();
-		const preferences = parsePreferences(formData);
+                const formData = await request.formData();
+                const preferences = parsePreferences(formData);
 
-		const payload = {
-			user_id: session.user.id,
-			[COLUMN_MAP.endorsements]: preferences.endorsements,
-			[COLUMN_MAP.gatherings]: preferences.gatherings,
-			[COLUMN_MAP.comments]: preferences.comments,
-			updated_at: new Date().toISOString()
-		};
+                const emailColumnAvailable = await hasProfileEmailColumn(locals.supabase);
+
+                const payload: Record<string, unknown> = {
+                        user_id: session.user.id,
+                        [COLUMN_MAP.endorsements]: preferences.endorsements,
+                        [COLUMN_MAP.gatherings]: preferences.gatherings,
+                        [COLUMN_MAP.comments]: preferences.comments,
+                        updated_at: new Date().toISOString()
+                };
+
+                if (emailColumnAvailable) {
+                        payload.email = normalizeEmail(session.user.email ?? null);
+                }
 
 		const { error } = await locals.supabase.from('profiles').upsert(payload, {
 			onConflict: 'user_id'
