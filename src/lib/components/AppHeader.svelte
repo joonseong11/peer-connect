@@ -10,11 +10,11 @@
 		{ href: '/gatherings', label: '모임 라운지' }
 	];
 
-	const guestNavItems = [
-		{ href: '#features', label: '서비스 소개' },
-		{ href: '#profiles', label: '프로필 미리보기' },
-		{ href: '#gatherings', label: '모임 라운지' }
-	];
+const guestNavItems = [
+	{ href: '/#features', label: '서비스 소개' },
+	{ href: '/#profiles', label: '프로필 미리보기' },
+	{ href: '/#gatherings', label: '모임 라운지' }
+];
 
 	const loginActionStore = derived(page, ($page) => {
 		const current = $page.url;

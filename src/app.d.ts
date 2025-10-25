@@ -19,6 +19,12 @@ declare global {
 			authErrorMessage?: string | null;
 			authRedirectTarget?: string | null;
 			invitesEnabled?: boolean;
+			inviteePrompt?: {
+				redemptionId: string;
+				inviteeUserId: string;
+				inviteeName: string | null;
+				inviteeRole: string | null;
+			} | null;
 		}
 		// interface PageState {}
 		// interface Platform {}

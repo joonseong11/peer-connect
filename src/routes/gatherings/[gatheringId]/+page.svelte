@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
 
-	const { data, form } = $props<{ data: PageData; form: ActionData }>();
+	type GatheringActionData = ActionData & { parentCommentId?: string | null };
+
+	const { data, form } = $props<{ data: PageData; form: GatheringActionData }>();
 
 	const { session, post, comments, loadError } = data;
 	const isAuthor = $derived(session?.user.id === post.author_id);
@@ -15,6 +17,8 @@
 	let commentDraft = $state('');
 	let editingCommentId = $state<string | null>(null);
 	let editingCommentContent = $state('');
+	let replyingToCommentId = $state<string | null>(null);
+	let replyDraft = $state('');
 
 	$effect(() => {
 		if (!editingPost) {
@@ -36,7 +40,15 @@
 				};
 			}
 		} else if (form?.intent === 'commentCreate') {
-			if (form.success) {
+			if (form.parentCommentId) {
+				if (form.success && replyingToCommentId === form.parentCommentId) {
+					replyingToCommentId = null;
+					replyDraft = '';
+				} else if (form.values?.content) {
+					replyingToCommentId = form.parentCommentId;
+					replyDraft = form.values.content;
+				}
+			} else if (form.success) {
 				commentDraft = '';
 			} else if (form.values?.content) {
 				commentDraft = form.values.content;
@@ -193,10 +205,10 @@
 					class="w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
 				></textarea>
 			</label>
-			{#if form?.intent === 'commentCreate' && form.errors?.content}
+			{#if form?.intent === 'commentCreate' && !form?.parentCommentId && form.errors?.content}
 				<p class="text-sm font-medium text-rose-500">{form.errors.content}</p>
 			{/if}
-			{#if form?.intent === 'commentCreate' && form.serverMessage}
+			{#if form?.intent === 'commentCreate' && !form?.parentCommentId && form.serverMessage}
 				<p class="text-sm font-semibold text-rose-500">{form.serverMessage}</p>
 			{/if}
 			<button type="submit" class="btn btn-primary">댓글 남기기</button>
@@ -222,29 +234,41 @@
 									<p class="text-xs text-slate-500">{formatDateTime(comment.created_at)}</p>
 								</div>
 							</div>
-							{#if comment.author_id === session?.user.id}
-								<div class="flex items-center gap-2">
-									<button
-										type="button"
-										onclick={() => {
-											editingCommentId = comment.id;
-											editingCommentContent = comment.content;
-										}}
-										class="inline-flex items-center justify-center rounded-full border border-slate-300/60 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-peer-indigo/60 hover:text-peer-indigo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-peer-indigo/40"
-									>
-										수정
-									</button>
-									<form method="post" action="?/commentDelete">
-										<input type="hidden" name="commentId" value={comment.id} />
-										<button
-											type="submit"
-											class="inline-flex items-center justify-center rounded-full border border-rose-200/60 px-3 py-1.5 text-xs font-semibold text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
-										>
-											삭제
-										</button>
-									</form>
-								</div>
-							{/if}
+							<div class="flex flex-wrap items-center gap-2">
+								<button
+									type="button"
+									onclick={() => {
+										if (replyingToCommentId !== comment.id) {
+											replyingToCommentId = comment.id;
+											replyDraft = '';
+										}
+									}}
+									class="inline-flex items-center justify-center rounded-full border border-slate-300/60 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-peer-indigo/60 hover:text-peer-indigo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-peer-indigo/40"
+								>
+									답글
+								</button>
+				{#if comment.author_id === session?.user.id}
+					<button
+						type="button"
+						onclick={() => {
+							editingCommentId = comment.id;
+							editingCommentContent = comment.content;
+						}}
+						class="inline-flex items-center justify-center rounded-full border border-slate-300/60 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-peer-indigo/60 hover:text-peer-indigo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-peer-indigo/40"
+					>
+						수정
+					</button>
+					<form method="post" action="?/commentDelete">
+						<input type="hidden" name="commentId" value={comment.id} />
+						<button
+							type="submit"
+							class="inline-flex items-center justify-center rounded-full border border-rose-200/60 px-3 py-1.5 text-xs font-semibold text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
+						>
+							삭제
+						</button>
+					</form>
+				{/if}
+							</div>
 						</div>
 
 						{#if editingCommentId === comment.id}
@@ -279,6 +303,120 @@
 							</form>
 						{:else}
 							<p class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{comment.content}</p>
+						{/if}
+
+						{#if replyingToCommentId === comment.id}
+							<form class="mt-4 space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4" method="post" action="?/commentCreate">
+								<input type="hidden" name="parentCommentId" value={comment.id} />
+								<label class="block text-sm font-semibold text-slate-700">
+									<span class="sr-only">답글 내용</span>
+									<textarea
+										name="content"
+										rows={3}
+										required
+										bind:value={replyDraft}
+										placeholder="이 댓글에 대한 답글을 남겨보세요."
+										class="w-full rounded-2xl border border-slate-300/60 bg-white px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
+									></textarea>
+								</label>
+								{#if form?.intent === 'commentCreate' && form.parentCommentId === comment.id && form.errors?.content}
+									<p class="text-sm font-medium text-rose-500">{form.errors.content}</p>
+								{/if}
+								{#if form?.intent === 'commentCreate' && form.parentCommentId === comment.id && form.serverMessage}
+									<p class="text-sm font-semibold text-rose-500">{form.serverMessage}</p>
+								{/if}
+								<div class="flex items-center gap-2">
+									<button
+										type="button"
+										onclick={() => {
+											replyingToCommentId = null;
+											replyDraft = '';
+										}}
+										class="inline-flex items-center justify-center rounded-full border border-slate-300/60 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/60"
+									>
+										취소
+									</button>
+									<button type="submit" class="btn btn-primary px-5 py-2 text-xs">답글 남기기</button>
+								</div>
+							</form>
+						{/if}
+
+						{#if comment.replies.length > 0}
+							<ul class="mt-5 space-y-3 border-l border-slate-200/70 pl-4 sm:pl-6">
+								{#each comment.replies as reply}
+									<li class="rounded-2xl border border-slate-200/60 bg-slate-50/70 p-4">
+										<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+											<div class="flex items-start gap-3">
+												<img
+													class="h-9 w-9 rounded-full border border-slate-200/60 bg-white object-cover"
+													src={reply.author?.photo_url ?? '/images/default-profile.svg'}
+													alt={(reply.author?.full_name ?? '알 수 없는 멤버') + '의 프로필 이미지'}
+												/>
+												<div>
+													<p class="text-xs font-semibold text-peer-navy">{reply.author?.full_name ?? '알 수 없는 멤버'}</p>
+													<p class="text-[11px] text-slate-500">{formatDateTime(reply.created_at)}</p>
+												</div>
+											</div>
+											{#if reply.author_id === session?.user.id}
+												<div class="flex items-center gap-2">
+													<button
+														type="button"
+														onclick={() => {
+															editingCommentId = reply.id;
+															editingCommentContent = reply.content;
+														}}
+														class="inline-flex items-center justify-center rounded-full border border-slate-300/60 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-peer-indigo/60 hover:text-peer-indigo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-peer-indigo/40"
+													>
+														수정
+													</button>
+													<form method="post" action="?/commentDelete">
+														<input type="hidden" name="commentId" value={reply.id} />
+														<button
+															type="submit"
+															class="inline-flex items-center justify-center rounded-full border border-rose-200/60 px-2.5 py-1 text-[11px] font-semibold text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
+														>
+															삭제
+														</button>
+													</form>
+												</div>
+											{/if}
+										</div>
+										{#if editingCommentId === reply.id}
+											<form class="mt-3 space-y-3" method="post" action="?/commentUpdate">
+												<input type="hidden" name="commentId" value={reply.id} />
+												<textarea
+													name="content"
+													rows={3}
+													required
+													bind:value={editingCommentContent}
+													class="w-full rounded-2xl border border-slate-300/60 bg-white px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
+												></textarea>
+												{#if form?.intent === 'commentUpdate' && form.commentId === reply.id && form.errors?.content}
+													<p class="text-sm font-medium text-rose-500">{form.errors.content}</p>
+												{/if}
+												{#if form?.intent === 'commentUpdate' && form.commentId === reply.id && form.serverMessage}
+													<p class="text-sm font-semibold text-rose-500">{form.serverMessage}</p>
+												{/if}
+												<div class="flex items-center gap-2">
+													<button
+														type="button"
+														onclick={() => {
+															editingCommentId = null;
+															editingCommentContent = '';
+														}}
+														class="inline-flex items-center justify-center rounded-full border border-slate-300/60 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/60"
+													>
+														취소
+													</button>
+													<button type="submit" class="btn btn-primary px-5 py-2 text-xs">저장</button>
+												</div>
+											</form>
+										{:else}
+											<p class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{reply.content}</p>
+										{/if}
+									</li>
+								{/each}
+							</ul>
 						{/if}
 					</li>
 				{/each}

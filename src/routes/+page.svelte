@@ -80,6 +80,7 @@
 	let supabase: SupabaseClient | null = null;
 const invitesEnabled = $derived(data.invitesEnabled ?? false);
 const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
+const inviteePrompt = $derived(data.inviteePrompt ?? null);
 
 	if (browser) {
 		const initSupabaseClient = () => {
@@ -325,3 +326,28 @@ const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
 			</div>
 	</section>
 </main>
+
+{#if inviteePrompt}
+	<div class="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/60 px-5">
+		<div class="w-full max-w-lg rounded-3xl border border-slate-200/70 bg-white p-8 text-center shadow-2xl">
+			<p class="text-lg font-semibold text-peer-navy">내 초대로 동료가 합류했습니다.</p>
+			<p class="mt-2 text-sm text-slate-600">
+				{inviteePrompt.inviteeName ?? '새 동료'}님에게 추천서를 남겨보시겠어요?
+			</p>
+			<form method="post" action="?/acknowledgeInviteePrompt" class="mt-6 flex flex-wrap items-center justify-center gap-3">
+				<input type="hidden" name="redemptionId" value={inviteePrompt.redemptionId} />
+				<input
+					type="hidden"
+					name="next"
+					value={`/members/${inviteePrompt.inviteeUserId}?endorsementStatus=prompt`}
+				/>
+				<button type="submit" name="intent" value="visit" class="btn btn-primary">
+					예
+				</button>
+				<button type="submit" name="intent" value="dismiss" class="btn btn-secondary">
+					아니오
+				</button>
+			</form>
+		</div>
+	</div>
+{/if}

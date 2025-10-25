@@ -69,7 +69,7 @@ export const actions: Actions = {
 
 		const { data: currentProfile } = await locals.supabase
 			.from('profiles')
-			.select('photo_url')
+			.select('photo_url, profile_completed_at')
 			.eq('user_id', session.user.id)
 			.maybeSingle();
 
@@ -165,6 +165,13 @@ export const actions: Actions = {
 			updated_at: new Date().toISOString()
 		};
 
+		const isFirstCompletion =
+			!currentProfile?.profile_completed_at || currentProfile.profile_completed_at.length === 0;
+
+		if (isFirstCompletion) {
+			payload.profile_completed_at = new Date().toISOString();
+		}
+
                 if (emailColumnAvailable) {
                         payload.email = normalizeEmail(session.user.email ?? null);
                 }
@@ -184,6 +191,7 @@ export const actions: Actions = {
 
 		return {
 			success: true,
+			firstCompletion: isFirstCompletion,
 			values: { ...values, photo_url: photoUrl }
 		};
 	}

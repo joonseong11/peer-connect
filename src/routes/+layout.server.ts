@@ -11,11 +11,16 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		return { session: null, invite: null };
 	}
 
+	let requiresProfileCompletion = false;
+
         try {
                 const emailColumnAvailable = await hasProfileEmailColumn(locals.supabase);
                 const oauthEmail = normalizeEmail(session.user.email ?? null);
 
-                const selectColumns = emailColumnAvailable ? 'user_id, email, contact_email' : 'user_id';
+                const baseProfileColumns = 'user_id, profile_completed_at';
+                const selectColumns = emailColumnAvailable
+                        ? `${baseProfileColumns}, email, contact_email`
+                        : baseProfileColumns;
 
                 const {
                         data: existingProfile,
@@ -31,8 +36,12 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
                                   user_id: string;
                                   email?: string | null;
                                   contact_email?: string | null;
+                                  profile_completed_at?: string | null;
                           }
                         | null;
+		if (!profileLookupError) {
+			requiresProfileCompletion = !profileRecord?.profile_completed_at;
+		}
 
                 if (!profileLookupError && !profileRecord) {
                         const fallbackName =
@@ -63,6 +72,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
                         if (createProfileError) {
                                 console.error('Failed to create default profile during onboarding', createProfileError);
                         }
+			requiresProfileCompletion = true;
                 } else if (
                         !profileLookupError &&
                         emailColumnAvailable &&
@@ -108,6 +118,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
                                         );
                                 }
                         }
+			requiresProfileCompletion = !profileRecord.profile_completed_at;
                 } else if (profileLookupError) {
                         console.error('Failed to verify profile existence during onboarding', profileLookupError);
                 }
@@ -153,6 +164,10 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 
 	if (requireInvite && !isInvitePage && !isProfilePage && !isAuthRoute) {
 		throw redirect(303, '/invite');
+	}
+
+	if (!requireInvite && requiresProfileCompletion && !isProfilePage && !isAuthRoute) {
+		throw redirect(303, '/profile?onboarding=1');
 	}
 
 	return {

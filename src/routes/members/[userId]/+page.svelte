@@ -153,12 +153,12 @@
 			{#if !existingEndorsementId && profile.user_id !== session?.user.id}
 				<form method="post" action="?/endorse" class="space-y-4">
 					<label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-						<span>추천 내용 (최소 50자)</span>
+						<span>추천 내용 (최소 20자)</span>
 						<textarea
 							name="content"
 							rows={5}
 							required
-							minlength={50}
+							minlength={20}
 							placeholder="어떤 상황에서 이 동료가 빛났는지, 함께 일하며 무엇을 배웠는지 구체적으로 작성해주세요."
 							class="w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
 						>{values.content}</textarea>

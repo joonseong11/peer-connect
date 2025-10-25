@@ -97,10 +97,10 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const content = (formData.get('content') ?? '').toString().trim();
 
-		if (content.length < 50) {
+		if (content.length < 20) {
 			return fail(400, {
 				success: false,
-				errors: { content: '추천/칭찬은 최소 50자 이상 작성해주세요.' },
+				errors: { content: '추천/칭찬은 최소 20자 이상 작성해주세요.' },
 				values: { content }
 			});
 		}

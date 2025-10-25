@@ -1,11 +1,14 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { onDestroy } from 'svelte';
-	import type { ActionData, PageData } from './$types';
+import { browser } from '$app/environment';
+import { onDestroy } from 'svelte';
+import type { ActionData, PageData } from './$types';
 
-	const { data, form } = $props<{ data: PageData; form: ActionData }>();
+	type ProfileActionData = ActionData & { firstCompletion?: boolean };
+
+	const { data, form } = $props<{ data: PageData; form: ProfileActionData }>();
 
 	const { profile, session, loadError } = data;
+	const invite = $derived(data.invite ?? null);
 
 	const initialValues = {
 		full_name: profile?.full_name ?? session?.user.user_metadata.full_name ?? '',
@@ -25,6 +28,26 @@
 	const values = $derived<Record<string, string>>((form?.values as Record<string, string>) ?? initialValues);
 	const fieldError = (field: keyof typeof initialValues) => form?.errors?.[field] ?? null;
 	const avatarError = $derived(form?.errors?.avatar ?? null);
+	let showProfileCompleteModal = $state(false);
+	let handledForm: ProfileActionData | null = null;
+
+	$effect(() => {
+		if (!invite?.inviter_user_id) {
+			showProfileCompleteModal = false;
+			return;
+		}
+
+		if (!form) {
+			handledForm = null;
+			showProfileCompleteModal = false;
+			return;
+		}
+
+		if (form !== handledForm) {
+			handledForm = form;
+			showProfileCompleteModal = Boolean(form.success && form.firstCompletion);
+		}
+	});
 
 	const MAX_AVATAR_DIMENSION = 512;
 	const TARGET_MAX_SIZE = 140 * 1024;
@@ -278,3 +301,29 @@
 		</div>
 	</form>
 </main>
+
+{#if showProfileCompleteModal && invite?.inviter_user_id}
+	<div class="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/60 px-5">
+		<div class="w-full max-w-md rounded-3xl border border-slate-200/70 bg-white p-8 text-center shadow-2xl">
+			<p class="text-lg font-semibold text-peer-navy">나를 초대한 동료에게 추천서를 남겨볼까요?</p>
+			<p class="mt-3 text-sm text-slate-600">
+				초대한 동료에게 감사의 마음을 추천서로 전해보세요. 짧은 경험이라도 괜찮아요!
+			</p>
+			<div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+				<a
+					class="btn btn-primary"
+					href={`/members/${invite.inviter_user_id}?endorsementStatus=prompt`}
+				>
+					예
+				</a>
+				<button
+					type="button"
+					class="btn btn-secondary"
+					onclick={() => (showProfileCompleteModal = false)}
+				>
+					아니오
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

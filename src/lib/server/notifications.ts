@@ -17,6 +17,13 @@ type EndorsementNotificationInput = {
 	content: string;
 };
 
+type GatheringCommentNotificationInput = {
+	target: { email: string; name?: string | null; userId: string };
+	post: { id: string; title: string };
+	comment: { authorName: string; content: string };
+	kind: 'post' | 'reply';
+};
+
 const getAppUrl = () => {
 	if (PUBLIC_APP_URL) {
 		return PUBLIC_APP_URL.replace(/\/$/, '');
@@ -87,6 +94,49 @@ ${input.authorName}님이 당신에게 추천서를 남겼습니다.
 ${input.content}
 
 추천서 확인하러 가기: ${endorsementUrl}
+`.trim();
+
+	return sendEmail({
+		to: { name: input.target.name, email: input.target.email },
+		subject,
+		html,
+		text
+	});
+};
+
+export const notifyGatheringCommentReceived = async (
+	input: GatheringCommentNotificationInput
+) => {
+	const appUrl = getAppUrl();
+	const postUrl = `${appUrl}/gatherings/${input.post.id}`;
+	const actionLabel = input.kind === 'reply' ? '답글 확인하기' : '댓글 확인하기';
+	const description =
+		input.kind === 'reply'
+			? `<strong>${input.comment.authorName}</strong>님이 당신의 댓글에 답글을 남겼습니다.`
+			: `<strong>${input.comment.authorName}</strong>님이 &lt;${input.post.title}&gt; 글에 댓글을 남겼습니다.`;
+	const subject =
+		input.kind === 'reply'
+			? `PEER CONNECT에서 ${input.comment.authorName}님이 내 댓글에 답글을 남겼습니다.`
+			: `PEER CONNECT에서 ${input.comment.authorName}님이 내 모임 글에 댓글을 남겼습니다.`;
+
+	const excerpt = createExcerpt(input.comment.content, 220);
+
+	const html = `
+		<p>${description}</p>
+		<blockquote style="margin: 24px 0; padding: 16px 20px; background: #eef2ff; border-radius: 16px; line-height: 1.6;">
+			${input.comment.content.replace(/\n/g, '<br />')}
+		</blockquote>
+		<a href="${postUrl}" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#4338ca;color:#ffffff;text-decoration:none;font-weight:600;">${actionLabel}</a>
+	`.trim();
+
+	const text = `
+${input.comment.authorName}님이 새 ${
+		input.kind === 'reply' ? '답글' : '댓글'
+	}을 남겼습니다.
+
+${excerpt}
+
+${actionLabel}: ${postUrl}
 `.trim();
 
 	return sendEmail({
