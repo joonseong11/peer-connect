@@ -77,7 +77,7 @@ create table if not exists public.endorsements (
   author_id uuid not null references public.profiles (user_id) on delete cascade,
   content text not null,
   created_at timestamptz default timezone('utc'::text, now()),
-  constraint endorsements_min_length check (char_length(content) >= 50),
+  constraint endorsements_min_length check (char_length(content) >= 20),
   constraint endorsements_unique_pair unique (author_id, target_user_id)
 );
 
@@ -307,7 +307,7 @@ The landing page now exposes:
 - Supabase SSR integration with cookie-based sessions
 - `/profile` route for creating/updating the authenticated member profile
 - `/members` list and detail pages for exploring peers
-- One-per-author endorsements with 50자 이상 검증 및 삭제 기능
+- One-per-author endorsements with 20자 이상 검증 및 삭제 기능
 
 ## Next Ideas
 
