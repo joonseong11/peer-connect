@@ -21,10 +21,21 @@
 	const currentActiveCount = $derived(form?.activeCount ?? activeCount);
 	const currentStatusMessage = $derived(form?.statusMessage ?? statusMessage);
 
-	let expandedSlot = $state<number | null>(form?.highlightSlot ?? null);
-	let copiedSlot = $state<number | null>(null);
-	let copyErrorSlot = $state<number | null>(null);
-	let origin = $state('');
+        let expandedSlot = $state<number | null>(form?.highlightSlot ?? null);
+        let copiedSlot = $state<number | null>(null);
+        let copyErrorSlot = $state<number | null>(null);
+        let origin = $state('');
+        let handledForm: ActionData | null = null;
+        let redeemSubmitting = $state(false);
+        let generateSubmittingSlot = $state<number | null>(null);
+
+        $effect(() => {
+                if (form !== handledForm) {
+                        handledForm = form ?? null;
+                        redeemSubmitting = false;
+                        generateSubmittingSlot = null;
+                }
+        });
 
 	$effect(() => {
 		if (form?.highlightSlot != null) {
@@ -38,9 +49,17 @@
 
 	const isExpanded = (slotIndex: number) => expandedSlot === slotIndex;
 
-	const toggleCard = (slotIndex: number) => {
-		expandedSlot = expandedSlot === slotIndex ? null : slotIndex;
-	};
+        const toggleCard = (slotIndex: number) => {
+                expandedSlot = expandedSlot === slotIndex ? null : slotIndex;
+        };
+
+        const handleRedeemSubmit = () => {
+                redeemSubmitting = true;
+        };
+
+        const handleGenerateSubmit = (slotIndex: number) => {
+                generateSubmittingSlot = slotIndex;
+        };
 
 	const shareUrlFor = (code: string | null) => {
 		if (!code || !origin) {
@@ -171,7 +190,12 @@
 		<section class="glass-panel space-y-4">
 			<h2 class="text-2xl font-semibold text-peer-navy">초대 코드 입력</h2>
 			<p class="text-sm text-slate-500">초대받은 코드 1개를 입력하면 커뮤니티 이용이 활성화됩니다.</p>
-			<form method="post" action="?/redeem" class="space-y-3">
+                        <form
+                                method="post"
+                                action="?/redeem"
+                                class="space-y-3"
+                                onsubmit={handleRedeemSubmit}
+                        >
 				<label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
 					<span>초대 코드</span>
 					<input
@@ -187,8 +211,34 @@
 				{#if redeemError}
 					<p class="text-sm font-medium text-rose-500" role="alert">{redeemError}</p>
 				{/if}
-				<button type="submit" class="btn btn-primary">코드 연결하기</button>
-			</form>
+                                <button type="submit" class="btn btn-primary" disabled={redeemSubmitting}>
+                                        {#if redeemSubmitting}
+                                                <svg
+                                                        class="h-4 w-4 animate-spin"
+                                                        viewBox="0 0 24 24"
+                                                        aria-hidden="true"
+                                                >
+                                                        <circle
+                                                                class="opacity-25"
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="10"
+                                                                stroke="currentColor"
+                                                                stroke-width="4"
+                                                                fill="none"
+                                                        />
+                                                        <path
+                                                                class="opacity-75"
+                                                                fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                        />
+                                                </svg>
+                                                <span>연결 중…</span>
+                                        {:else}
+                                                코드 연결하기
+                                        {/if}
+                                </button>
+                        </form>
 		</section>
 	{/if}
 
@@ -372,22 +422,51 @@
 									</section>
 								{/if}
 							{:else}
-								<section class="space-y-3 rounded-2xl border border-dashed border-peer-indigo/30 bg-white/80 p-4">
-									<p class="text-xs text-slate-500">
-										이 초대권을 활성화하면 새로운 동료를 초대할 수 있는 코드와 링크가 생성됩니다.
-									</p>
-									<form method="post" action="?/generate" class="space-y-2">
-										<input type="hidden" name="slot" value={card.slot.index} />
-										<button
-											type="submit"
-											class="w-full rounded-full bg-peer-indigo px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-peer-indigo/90 focus:outline-none focus:ring-2 focus:ring-peer-indigo/40 disabled:cursor-not-allowed disabled:opacity-60"
-											disabled={!hasLinkedInvite}
-										>
-											초대권 활성화하기
-										</button>
-										{#if !hasLinkedInvite}
-											<p class="text-xs font-medium text-slate-500">
-												먼저 초대 코드를 연결하면 초대권을 사용할 수 있어요.
+                                                                <section class="space-y-3 rounded-2xl border border-dashed border-peer-indigo/30 bg-white/80 p-4">
+                                                                        <p class="text-xs text-slate-500">
+                                                                                이 초대권을 활성화하면 새로운 동료를 초대할 수 있는 코드와 링크가 생성됩니다.
+                                                                        </p>
+                                                                        <form
+                                                                                method="post"
+                                                                                action="?/generate"
+                                                                                class="space-y-2"
+                                                                                onsubmit={() => handleGenerateSubmit(card.slot.index)}
+                                                                        >
+                                                                                <input type="hidden" name="slot" value={card.slot.index} />
+                                                                                <button
+                                                                                        type="submit"
+                                                                                        class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-peer-indigo px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-peer-indigo/90 focus:outline-none focus:ring-2 focus:ring-peer-indigo/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                                        disabled={!hasLinkedInvite || generateSubmittingSlot === card.slot.index}
+                                                                                >
+                                                                                        {#if generateSubmittingSlot === card.slot.index}
+                                                                                                <svg
+                                                                                                        class="h-4 w-4 animate-spin"
+                                                                                                        viewBox="0 0 24 24"
+                                                                                                        aria-hidden="true"
+                                                                                                >
+                                                                                                        <circle
+                                                                                                                class="opacity-25"
+                                                                                                                cx="12"
+                                                                                                                cy="12"
+                                                                                                                r="10"
+                                                                                                                stroke="currentColor"
+                                                                                                                stroke-width="4"
+                                                                                                                fill="none"
+                                                                                                        />
+                                                                                                        <path
+                                                                                                                class="opacity-75"
+                                                                                                                fill="currentColor"
+                                                                                                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                                                                        />
+                                                                                                </svg>
+                                                                                                <span>생성 중…</span>
+                                                                                        {:else}
+                                                                                                초대권 활성화하기
+                                                                                        {/if}
+                                                                                </button>
+                                                                                {#if !hasLinkedInvite}
+                                                                                        <p class="text-xs font-medium text-slate-500">
+                                                                                                먼저 초대 코드를 연결하면 초대권을 사용할 수 있어요.
 											</p>
 										{/if}
 									</form>

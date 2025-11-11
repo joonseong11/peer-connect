@@ -14,17 +14,37 @@
 		content: post.content
 	});
 
-	let commentDraft = $state('');
-	let editingCommentId = $state<string | null>(null);
-	let editingCommentContent = $state('');
-	let replyingToCommentId = $state<string | null>(null);
-	let replyDraft = $state('');
+        let commentDraft = $state('');
+        let editingCommentId = $state<string | null>(null);
+        let editingCommentContent = $state('');
+        let replyingToCommentId = $state<string | null>(null);
+        let replyDraft = $state('');
 
-	$effect(() => {
-		if (!editingPost) {
-			postDraft = {
-				title: post.title,
-				content: post.content
+        let handledForm: GatheringActionData | null = null;
+        let postUpdateSubmitting = $state(false);
+        let postDeleteSubmitting = $state(false);
+        let topCommentSubmitting = $state(false);
+        let replySubmittingForId = $state<string | null>(null);
+        let commentUpdateSubmittingId = $state<string | null>(null);
+        let commentDeleteSubmittingId = $state<string | null>(null);
+
+        $effect(() => {
+                if (form !== handledForm) {
+                        handledForm = form ?? null;
+                        postUpdateSubmitting = false;
+                        postDeleteSubmitting = false;
+                        topCommentSubmitting = false;
+                        replySubmittingForId = null;
+                        commentUpdateSubmittingId = null;
+                        commentDeleteSubmittingId = null;
+                }
+        });
+
+        $effect(() => {
+                if (!editingPost) {
+                        postDraft = {
+                                title: post.title,
+                                content: post.content
 			};
 		}
 	});
@@ -65,10 +85,35 @@
 					editingCommentContent = form.values.content;
 				}
 			}
-		} else if (form?.intent === 'deletePost' && !form.success && form.serverMessage) {
-			// retain editing state but surface error via server message
-		}
-	});
+                } else if (form?.intent === 'deletePost' && !form.success && form.serverMessage) {
+                        // retain editing state but surface error via server message
+                }
+        });
+
+        const handlePostUpdateSubmit = () => {
+                postUpdateSubmitting = true;
+        };
+
+        const handlePostDeleteSubmit = () => {
+                postDeleteSubmitting = true;
+        };
+
+        const handleCommentCreateSubmit = (parentId: string | null = null) => {
+                if (parentId) {
+                        replySubmittingForId = parentId;
+                } else {
+                        topCommentSubmitting = true;
+                        replySubmittingForId = null;
+                }
+        };
+
+        const handleCommentUpdateSubmit = (commentId: string) => {
+                commentUpdateSubmittingId = commentId;
+        };
+
+        const handleCommentDeleteSubmit = (commentId: string) => {
+                commentDeleteSubmittingId = commentId;
+        };
 
 	const formatDateTime = (value: string) =>
 		new Date(value).toLocaleString('ko-KR', {
@@ -119,30 +164,62 @@
 						>
 							{editingPost ? '↺' : '✎'}
 						</button>
-						<form
-							method="post"
-							action="?/deletePost"
-							onsubmit={(event) => {
-								if (!confirm('게시글을 삭제하시겠어요?')) {
-									event.preventDefault();
-								}
-							}}
-						>
-							<button
-								type="submit"
-								class="flex h-9 w-9 items-center justify-center rounded-full border border-rose-200/70 bg-rose-50 text-base text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
-								aria-label="게시글 삭제"
-							>
-								🗑
-							</button>
-						</form>
+                                                <form
+                                                        method="post"
+                                                        action="?/deletePost"
+                                                        onsubmit={(event) => {
+                                                                if (!confirm('게시글을 삭제하시겠어요?')) {
+                                                                        event.preventDefault();
+                                                                        return;
+                                                                }
+                                                                handlePostDeleteSubmit();
+                                                        }}
+                                                >
+                                                        <button
+                                                                type="submit"
+                                                                class="flex h-9 w-9 items-center justify-center rounded-full border border-rose-200/70 bg-rose-50 text-base text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
+                                                                aria-label="게시글 삭제"
+                                                                disabled={postDeleteSubmitting}
+                                                        >
+                                                                {#if postDeleteSubmitting}
+                                                                        <svg
+                                                                                class="h-4 w-4 animate-spin"
+                                                                                viewBox="0 0 24 24"
+                                                                                aria-hidden="true"
+                                                                        >
+                                                                                <circle
+                                                                                        class="opacity-25"
+                                                                                        cx="12"
+                                                                                        cy="12"
+                                                                                        r="10"
+                                                                                        stroke="currentColor"
+                                                                                        stroke-width="4"
+                                                                                        fill="none"
+                                                                                />
+                                                                                <path
+                                                                                        class="opacity-75"
+                                                                                        fill="currentColor"
+                                                                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                                                />
+                                                                        </svg>
+                                                                        <span class="sr-only">삭제 중…</span>
+                                                                {:else}
+                                                                        🗑
+                                                                {/if}
+                                                        </button>
+                                                </form>
 					</div>
 				{/if}
 			</div>
 		</header>
 
 		{#if editingPost}
-			<form class="space-y-4" method="post" action="?/updatePost">
+                        <form
+                                class="space-y-4"
+                                method="post"
+                                action="?/updatePost"
+                                onsubmit={handlePostUpdateSubmit}
+                        >
 				<label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
 					<span>제목</span>
 					<input
@@ -172,8 +249,34 @@
 				{#if form?.intent === 'updatePost' && form.serverMessage}
 					<p class="text-sm font-semibold text-rose-500">{form.serverMessage}</p>
 				{/if}
-				<button type="submit" class="btn btn-primary">게시글 저장</button>
-			</form>
+                                <button type="submit" class="btn btn-primary" disabled={postUpdateSubmitting}>
+                                        {#if postUpdateSubmitting}
+                                                <svg
+                                                        class="h-4 w-4 animate-spin"
+                                                        viewBox="0 0 24 24"
+                                                        aria-hidden="true"
+                                                >
+                                                        <circle
+                                                                class="opacity-25"
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="10"
+                                                                stroke="currentColor"
+                                                                stroke-width="4"
+                                                                fill="none"
+                                                        />
+                                                        <path
+                                                                class="opacity-75"
+                                                                fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                        />
+                                                </svg>
+                                                <span>저장 중…</span>
+                                        {:else}
+                                                게시글 저장
+                                        {/if}
+                                </button>
+                        </form>
 		{:else}
 			<h1 class="text-3xl font-semibold text-peer-navy">{post.title}</h1>
 			<div class="space-y-4 text-base leading-relaxed text-slate-700">
@@ -194,7 +297,12 @@
 			<p class="text-sm font-semibold text-rose-500" role="alert">{loadError}</p>
 		{/if}
 
-		<form class="space-y-3" method="post" action="?/commentCreate">
+                <form
+                        class="space-y-3"
+                        method="post"
+                        action="?/commentCreate"
+                        onsubmit={() => handleCommentCreateSubmit(null)}
+                >
 			<label class="block">
 				<textarea
 					name="content"
@@ -211,8 +319,34 @@
 			{#if form?.intent === 'commentCreate' && !form?.parentCommentId && form.serverMessage}
 				<p class="text-sm font-semibold text-rose-500">{form.serverMessage}</p>
 			{/if}
-			<button type="submit" class="btn btn-primary">댓글 남기기</button>
-		</form>
+                        <button type="submit" class="btn btn-primary" disabled={topCommentSubmitting}>
+                                {#if topCommentSubmitting}
+                                        <svg
+                                                class="h-4 w-4 animate-spin"
+                                                viewBox="0 0 24 24"
+                                                aria-hidden="true"
+                                        >
+                                                <circle
+                                                        class="opacity-25"
+                                                        cx="12"
+                                                        cy="12"
+                                                        r="10"
+                                                        stroke="currentColor"
+                                                        stroke-width="4"
+                                                        fill="none"
+                                                />
+                                                <path
+                                                        class="opacity-75"
+                                                        fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                />
+                                        </svg>
+                                        <span>등록 중…</span>
+                                {:else}
+                                        댓글 남기기
+                                {/if}
+                        </button>
+                </form>
 
 		{#if comments.length === 0}
 			<p class="rounded-2xl border border-dashed border-slate-300/70 bg-slate-100/70 px-4 py-6 text-center text-slate-500">
@@ -258,21 +392,55 @@
 					>
 						수정
 					</button>
-					<form method="post" action="?/commentDelete">
-						<input type="hidden" name="commentId" value={comment.id} />
-						<button
-							type="submit"
-							class="inline-flex items-center justify-center rounded-full border border-rose-200/60 px-3 py-1.5 text-xs font-semibold text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
-						>
-							삭제
-						</button>
-					</form>
+                                        <form
+                                                method="post"
+                                                action="?/commentDelete"
+                                                onsubmit={() => handleCommentDeleteSubmit(comment.id)}
+                                        >
+                                                <input type="hidden" name="commentId" value={comment.id} />
+                                                <button
+                                                        type="submit"
+                                                        class="inline-flex items-center justify-center rounded-full border border-rose-200/60 px-3 py-1.5 text-xs font-semibold text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
+                                                        disabled={commentDeleteSubmittingId === comment.id}
+                                                >
+                                                        {#if commentDeleteSubmittingId === comment.id}
+                                                                <svg
+                                                                        class="h-4 w-4 animate-spin"
+                                                                        viewBox="0 0 24 24"
+                                                                        aria-hidden="true"
+                                                                >
+                                                                        <circle
+                                                                                class="opacity-25"
+                                                                                cx="12"
+                                                                                cy="12"
+                                                                                r="10"
+                                                                                stroke="currentColor"
+                                                                                stroke-width="4"
+                                                                                fill="none"
+                                                                        />
+                                                                        <path
+                                                                                class="opacity-75"
+                                                                                fill="currentColor"
+                                                                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                                        />
+                                                                </svg>
+                                                                <span class="ml-1">삭제 중…</span>
+                                                        {:else}
+                                                                삭제
+                                                        {/if}
+                                                </button>
+                                        </form>
 				{/if}
 							</div>
 						</div>
 
 						{#if editingCommentId === comment.id}
-							<form class="mt-3 space-y-3" method="post" action="?/commentUpdate">
+                                                        <form
+                                                                class="mt-3 space-y-3"
+                                                                method="post"
+                                                                action="?/commentUpdate"
+                                                                onsubmit={() => handleCommentUpdateSubmit(comment.id)}
+                                                        >
 								<input type="hidden" name="commentId" value={comment.id} />
 								<textarea
 									name="content"
@@ -298,15 +466,50 @@
 									>
 										취소
 									</button>
-									<button type="submit" class="btn btn-primary px-5 py-2 text-xs">저장</button>
-								</div>
-							</form>
+                                                                        <button
+                                                                                type="submit"
+                                                                                class="btn btn-primary px-5 py-2 text-xs"
+                                                                                disabled={commentUpdateSubmittingId === comment.id}
+                                                                        >
+                                                                                {#if commentUpdateSubmittingId === comment.id}
+                                                                                        <svg
+                                                                                                class="h-4 w-4 animate-spin"
+                                                                                                viewBox="0 0 24 24"
+                                                                                                aria-hidden="true"
+                                                                                        >
+                                                                                                <circle
+                                                                                                        class="opacity-25"
+                                                                                                        cx="12"
+                                                                                                        cy="12"
+                                                                                                        r="10"
+                                                                                                        stroke="currentColor"
+                                                                                                        stroke-width="4"
+                                                                                                        fill="none"
+                                                                                                />
+                                                                                                <path
+                                                                                                        class="opacity-75"
+                                                                                                        fill="currentColor"
+                                                                                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                                                                />
+                                                                                        </svg>
+                                                                                        <span>저장 중…</span>
+                                                                                {:else}
+                                                                                        저장
+                                                                                {/if}
+                                                                        </button>
+                                                                </div>
+                                                        </form>
 						{:else}
 							<p class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{comment.content}</p>
 						{/if}
 
-						{#if replyingToCommentId === comment.id}
-							<form class="mt-4 space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4" method="post" action="?/commentCreate">
+                                                {#if replyingToCommentId === comment.id}
+                                                        <form
+                                                                class="mt-4 space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4"
+                                                                method="post"
+                                                                action="?/commentCreate"
+                                                                onsubmit={() => handleCommentCreateSubmit(comment.id)}
+                                                        >
 								<input type="hidden" name="parentCommentId" value={comment.id} />
 								<label class="block text-sm font-semibold text-slate-700">
 									<span class="sr-only">답글 내용</span>
@@ -325,21 +528,51 @@
 								{#if form?.intent === 'commentCreate' && form.parentCommentId === comment.id && form.serverMessage}
 									<p class="text-sm font-semibold text-rose-500">{form.serverMessage}</p>
 								{/if}
-								<div class="flex items-center gap-2">
-									<button
-										type="button"
-										onclick={() => {
-											replyingToCommentId = null;
-											replyDraft = '';
-										}}
-										class="inline-flex items-center justify-center rounded-full border border-slate-300/60 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/60"
-									>
-										취소
-									</button>
-									<button type="submit" class="btn btn-primary px-5 py-2 text-xs">답글 남기기</button>
-								</div>
-							</form>
-						{/if}
+                                                                <div class="flex items-center gap-2">
+                                                                        <button
+                                                                                type="button"
+                                                                                onclick={() => {
+                                                                                        replyingToCommentId = null;
+                                                                                        replyDraft = '';
+                                                                                }}
+                                                                                class="inline-flex items-center justify-center rounded-full border border-slate-300/60 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:-translate-y-0.5 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/60"
+                                                                        >
+                                                                                취소
+                                                                        </button>
+                                                                        <button
+                                                                                type="submit"
+                                                                                class="btn btn-primary px-5 py-2 text-xs"
+                                                                                disabled={replySubmittingForId === comment.id}
+                                                                        >
+                                                                                {#if replySubmittingForId === comment.id}
+                                                                                        <svg
+                                                                                                class="h-4 w-4 animate-spin"
+                                                                                                viewBox="0 0 24 24"
+                                                                                                aria-hidden="true"
+                                                                                        >
+                                                                                                <circle
+                                                                                                        class="opacity-25"
+                                                                                                        cx="12"
+                                                                                                        cy="12"
+                                                                                                        r="10"
+                                                                                                        stroke="currentColor"
+                                                                                                        stroke-width="4"
+                                                                                                        fill="none"
+                                                                                                />
+                                                                                                <path
+                                                                                                        class="opacity-75"
+                                                                                                        fill="currentColor"
+                                                                                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                                                                />
+                                                                                        </svg>
+                                                                                        <span>등록 중…</span>
+                                                                                {:else}
+                                                                                        답글 남기기
+                                                                                {/if}
+                                                                        </button>
+                                                                </div>
+                                                        </form>
+                                                {/if}
 
 						{#if comment.replies.length > 0}
 							<ul class="mt-5 space-y-3 border-l border-slate-200/70 pl-4 sm:pl-6">
@@ -369,20 +602,54 @@
 													>
 														수정
 													</button>
-													<form method="post" action="?/commentDelete">
-														<input type="hidden" name="commentId" value={reply.id} />
-														<button
-															type="submit"
-															class="inline-flex items-center justify-center rounded-full border border-rose-200/60 px-2.5 py-1 text-[11px] font-semibold text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
-														>
-															삭제
-														</button>
-													</form>
+                                                                                                        <form
+                                                                                                                method="post"
+                                                                                                                action="?/commentDelete"
+                                                                                                                onsubmit={() => handleCommentDeleteSubmit(reply.id)}
+                                                                                                        >
+                                                                                                                <input type="hidden" name="commentId" value={reply.id} />
+                                                                                                                <button
+                                                                                                                        type="submit"
+                                                                                                                        class="inline-flex items-center justify-center rounded-full border border-rose-200/60 px-2.5 py-1 text-[11px] font-semibold text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
+                                                                                                                        disabled={commentDeleteSubmittingId === reply.id}
+                                                                                                                >
+                                                                                                                        {#if commentDeleteSubmittingId === reply.id}
+                                                                                                                                <svg
+                                                                                                                                        class="h-3.5 w-3.5 animate-spin"
+                                                                                                                                        viewBox="0 0 24 24"
+                                                                                                                                        aria-hidden="true"
+                                                                                                                                >
+                                                                                                                                        <circle
+                                                                                                                                                class="opacity-25"
+                                                                                                                                                cx="12"
+                                                                                                                                                cy="12"
+                                                                                                                                                r="10"
+                                                                                                                                                stroke="currentColor"
+                                                                                                                                                stroke-width="4"
+                                                                                                                                                fill="none"
+                                                                                                                                        />
+                                                                                                                                        <path
+                                                                                                                                                class="opacity-75"
+                                                                                                                                                fill="currentColor"
+                                                                                                                                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                                                                                                        />
+                                                                                                                                </svg>
+                                                                                                                                <span class="ml-1">삭제 중…</span>
+                                                                                                                        {:else}
+                                                                                                                                삭제
+                                                                                                                        {/if}
+                                                                                                                </button>
+                                                                                                        </form>
 												</div>
 											{/if}
 										</div>
 										{#if editingCommentId === reply.id}
-											<form class="mt-3 space-y-3" method="post" action="?/commentUpdate">
+                                                                                        <form
+                                                                                                class="mt-3 space-y-3"
+                                                                                                method="post"
+                                                                                                action="?/commentUpdate"
+                                                                                                onsubmit={() => handleCommentUpdateSubmit(reply.id)}
+                                                                                        >
 												<input type="hidden" name="commentId" value={reply.id} />
 												<textarea
 													name="content"
@@ -408,9 +675,39 @@
 													>
 														취소
 													</button>
-													<button type="submit" class="btn btn-primary px-5 py-2 text-xs">저장</button>
-												</div>
-											</form>
+                                                                                                        <button
+                                                                                                                type="submit"
+                                                                                                                class="btn btn-primary px-5 py-2 text-xs"
+                                                                                                                disabled={commentUpdateSubmittingId === reply.id}
+                                                                                                        >
+                                                                                                                {#if commentUpdateSubmittingId === reply.id}
+                                                                                                                        <svg
+                                                                                                                                class="h-4 w-4 animate-spin"
+                                                                                                                                viewBox="0 0 24 24"
+                                                                                                                                aria-hidden="true"
+                                                                                                                        >
+                                                                                                                                <circle
+                                                                                                                                        class="opacity-25"
+                                                                                                                                        cx="12"
+                                                                                                                                        cy="12"
+                                                                                                                                        r="10"
+                                                                                                                                        stroke="currentColor"
+                                                                                                                                        stroke-width="4"
+                                                                                                                                        fill="none"
+                                                                                                                                />
+                                                                                                                                <path
+                                                                                                                                        class="opacity-75"
+                                                                                                                                        fill="currentColor"
+                                                                                                                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                                                                                                />
+                                                                                                                        </svg>
+                                                                                                                        <span>저장 중…</span>
+                                                                                                                {:else}
+                                                                                                                        저장
+                                                                                                                {/if}
+                                                                                                        </button>
+                                                                                                </div>
+                                                                                        </form>
 										{:else}
 											<p class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{reply.content}</p>
 										{/if}

@@ -14,16 +14,34 @@
 	const profileExists = $derived(data.profileExists ?? false);
 	const invitesEnabled = $derived(data.invitesEnabled ?? false);
 
-	const handleDeleteSubmit = (event: SubmitEvent) => {
-		if (typeof window !== 'undefined') {
-			const confirmed = window.confirm(
-				'정말 회원 탈퇴를 진행하시겠어요? 삭제된 데이터는 복구할 수 없습니다.'
-			);
-			if (!confirmed) {
-				event.preventDefault();
-			}
-		}
-	};
+        let handledForm: ActionData | null = null;
+        let preferencesSubmitting = $state(false);
+        let deleteSubmitting = $state(false);
+
+        $effect(() => {
+                if (form !== handledForm) {
+                        handledForm = form ?? null;
+                        preferencesSubmitting = false;
+                        deleteSubmitting = false;
+                }
+        });
+
+        const handlePreferencesSubmit = () => {
+                preferencesSubmitting = true;
+        };
+
+        const handleDeleteSubmit = (event: SubmitEvent) => {
+                if (typeof window !== 'undefined') {
+                        const confirmed = window.confirm(
+                                '정말 회원 탈퇴를 진행하시겠어요? 삭제된 데이터는 복구할 수 없습니다.'
+                        );
+                        if (!confirmed) {
+                                event.preventDefault();
+                                return;
+                        }
+                }
+                deleteSubmitting = true;
+        };
 </script>
 
 <svelte:head>
@@ -93,7 +111,12 @@
 			{/if}
 		</section>
 
-		<form method="post" action="?/updatePreferences" class="space-y-6">
+                <form
+                        method="post"
+                        action="?/updatePreferences"
+                        class="space-y-6"
+                        onsubmit={handlePreferencesSubmit}
+                >
 			<fieldset class="space-y-5" disabled={!preferencesAvailable}>
 				<legend class="text-lg font-semibold text-peer-navy">이메일 알림</legend>
 
@@ -148,11 +171,39 @@
 			{/if}
 
 			<div class="flex flex-wrap items-center gap-3">
-				<button type="submit" class="btn btn-primary" disabled={!preferencesAvailable}>
-					알림 설정 저장
-				</button>
-			</div>
-		</form>
+                                <button
+                                        type="submit"
+                                        class="btn btn-primary"
+                                        disabled={!preferencesAvailable || preferencesSubmitting}
+                                >
+                                        {#if preferencesSubmitting}
+                                                <svg
+                                                        class="h-4 w-4 animate-spin"
+                                                        viewBox="0 0 24 24"
+                                                        aria-hidden="true"
+                                                >
+                                                        <circle
+                                                                class="opacity-25"
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="10"
+                                                                stroke="currentColor"
+                                                                stroke-width="4"
+                                                                fill="none"
+                                                        />
+                                                        <path
+                                                                class="opacity-75"
+                                                                fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                        />
+                                                </svg>
+                                                <span>저장 중…</span>
+                                        {:else}
+                                                알림 설정 저장
+                                        {/if}
+                                </button>
+                        </div>
+                </form>
 	</section>
 
 	<section class="glass-panel space-y-5 border-rose-200/70">
@@ -173,10 +224,38 @@
 			<p class="text-sm font-semibold text-rose-500" role="alert">{deleteError}</p>
 		{/if}
 
-		<form method="post" action="?/deleteAccount" onsubmit={handleDeleteSubmit}>
-			<button type="submit" class="btn btn-secondary text-rose-600 hover:text-rose-700" disabled={!adminClientAvailable}>
-				회원 탈퇴하기
-			</button>
-		</form>
+                <form method="post" action="?/deleteAccount" onsubmit={handleDeleteSubmit}>
+                        <button
+                                type="submit"
+                                class="btn btn-secondary text-rose-600 hover:text-rose-700"
+                                disabled={!adminClientAvailable || deleteSubmitting}
+                        >
+                                {#if deleteSubmitting}
+                                        <svg
+                                                class="h-4 w-4 animate-spin"
+                                                viewBox="0 0 24 24"
+                                                aria-hidden="true"
+                                        >
+                                                <circle
+                                                        class="opacity-25"
+                                                        cx="12"
+                                                        cy="12"
+                                                        r="10"
+                                                        stroke="currentColor"
+                                                        stroke-width="4"
+                                                        fill="none"
+                                                />
+                                                <path
+                                                        class="opacity-75"
+                                                        fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                />
+                                        </svg>
+                                        <span>탈퇴 중…</span>
+                                {:else}
+                                        회원 탈퇴하기
+                                {/if}
+                        </button>
+                </form>
 	</section>
 </main>
