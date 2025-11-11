@@ -7,8 +7,28 @@
 	const defaultAvatar = '/images/default-profile.svg';
 	const values = $derived<Record<string, string>>(form?.values ?? { content: '' });
 	const contentError = $derived(form?.errors?.content ?? null);
-	const serverMessage = $derived(form?.serverMessage ?? null);
-	const deleteError = $derived(form?.deleteError ?? null);
+        const serverMessage = $derived(form?.serverMessage ?? null);
+        const deleteError = $derived(form?.deleteError ?? null);
+
+        let handledForm: ActionData | null = null;
+        let endorseSubmitting = $state(false);
+        let deleteSubmittingId = $state<string | null>(null);
+
+        $effect(() => {
+                if (form !== handledForm) {
+                        handledForm = form ?? null;
+                        endorseSubmitting = false;
+                        deleteSubmittingId = null;
+                }
+        });
+
+        const handleEndorseSubmit = () => {
+                endorseSubmitting = true;
+        };
+
+        const handleDeleteSubmit = (endorsementId: string) => {
+                deleteSubmittingId = endorsementId;
+        };
 
 	type ContactItem = {
 		label: string;
@@ -150,8 +170,13 @@
 				<p class="rounded-2xl bg-slate-100/70 px-4 py-3 text-sm text-slate-500">나의 프로필에는 추천을 남길 수 없어요.</p>
 			{/if}
 
-			{#if !existingEndorsementId && profile.user_id !== session?.user.id}
-				<form method="post" action="?/endorse" class="space-y-4">
+                        {#if !existingEndorsementId && profile.user_id !== session?.user.id}
+                                <form
+                                        method="post"
+                                        action="?/endorse"
+                                        class="space-y-4"
+                                        onsubmit={handleEndorseSubmit}
+                                >
 					<label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
 						<span>추천 내용 (최소 20자)</span>
 						<textarea
@@ -169,9 +194,35 @@
 					{#if serverMessage}
 						<p class="text-sm font-semibold text-rose-500" role="alert">{serverMessage}</p>
 					{/if}
-					<button type="submit" class="btn btn-primary">추천 남기기</button>
-				</form>
-			{/if}
+                                        <button type="submit" class="btn btn-primary" disabled={endorseSubmitting}>
+                                                {#if endorseSubmitting}
+                                                        <svg
+                                                                class="h-4 w-4 animate-spin"
+                                                                viewBox="0 0 24 24"
+                                                                aria-hidden="true"
+                                                        >
+                                                                <circle
+                                                                        class="opacity-25"
+                                                                        cx="12"
+                                                                        cy="12"
+                                                                        r="10"
+                                                                        stroke="currentColor"
+                                                                        stroke-width="4"
+                                                                        fill="none"
+                                                                />
+                                                                <path
+                                                                        class="opacity-75"
+                                                                        fill="currentColor"
+                                                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                                />
+                                                        </svg>
+                                                        <span>등록 중…</span>
+                                                {:else}
+                                                        추천 남기기
+                                                {/if}
+                                        </button>
+                                </form>
+                        {/if}
 
 			<section class="space-y-4">
 				{#if endorsements.length === 0}
@@ -219,14 +270,47 @@
 								</time>
 							</header>
 							<p class="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{endorsement.content}</p>
-							{#if endorsement.author_id === session?.user.id}
-								<form method="post" action="?/delete" class="pt-3">
-									<input type="hidden" name="endorsementId" value={endorsement.id} />
-									<button type="submit" class="inline-flex items-center justify-center rounded-full border border-rose-200/60 px-4 py-1.5 text-xs font-semibold text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40">
-										추천 삭제
-									</button>
-								</form>
-							{/if}
+                                                        {#if endorsement.author_id === session?.user.id}
+                                                                <form
+                                                                        method="post"
+                                                                        action="?/delete"
+                                                                        class="pt-3"
+                                                                        onsubmit={() => handleDeleteSubmit(endorsement.id)}
+                                                                >
+                                                                        <input type="hidden" name="endorsementId" value={endorsement.id} />
+                                                                        <button
+                                                                                type="submit"
+                                                                                class="inline-flex items-center justify-center rounded-full border border-rose-200/60 px-4 py-1.5 text-xs font-semibold text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
+                                                                                disabled={deleteSubmittingId === endorsement.id}
+                                                                        >
+                                                                                {#if deleteSubmittingId === endorsement.id}
+                                                                                        <svg
+                                                                                                class="h-3.5 w-3.5 animate-spin"
+                                                                                                viewBox="0 0 24 24"
+                                                                                                aria-hidden="true"
+                                                                                        >
+                                                                                                <circle
+                                                                                                        class="opacity-25"
+                                                                                                        cx="12"
+                                                                                                        cy="12"
+                                                                                                        r="10"
+                                                                                                        stroke="currentColor"
+                                                                                                        stroke-width="4"
+                                                                                                        fill="none"
+                                                                                                />
+                                                                                                <path
+                                                                                                        class="opacity-75"
+                                                                                                        fill="currentColor"
+                                                                                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                                                                />
+                                                                                        </svg>
+                                                                                        <span class="ml-1">삭제 중…</span>
+                                                                                {:else}
+                                                                                        추천 삭제
+                                                                                {/if}
+                                                                        </button>
+                                                                </form>
+                                                        {/if}
 						</article>
 					{/each}
 				{/if}

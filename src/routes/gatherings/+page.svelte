@@ -1,18 +1,32 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
 
-	const { data, form } = $props<{ data: PageData; form: ActionData }>();
+        const { data, form } = $props<{ data: PageData; form: ActionData }>();
 
-	const { session, posts, loadError } = data;
-	const values = $derived<Record<string, string>>(
-		form?.values ?? {
-			title: '',
-			content: ''
-		}
-	);
+        const { session, posts, loadError } = data;
+        const values = $derived<Record<string, string>>(
+                form?.values ?? {
+                        title: '',
+                        content: ''
+                }
+        );
 
-	const fieldError = (field: 'title' | 'content') => form?.errors?.[field] ?? null;
-	const serverMessage = $derived(form?.serverMessage ?? null);
+        const fieldError = (field: 'title' | 'content') => form?.errors?.[field] ?? null;
+        const serverMessage = $derived(form?.serverMessage ?? null);
+
+        let createSubmitting = $state(false);
+        let handledForm: ActionData | null = null;
+
+        $effect(() => {
+                if (form !== handledForm) {
+                        handledForm = form ?? null;
+                        createSubmitting = false;
+                }
+        });
+
+        const handleCreateSubmit = () => {
+                createSubmitting = true;
+        };
 
 	const formatDate = (value: string) =>
 		new Date(value).toLocaleDateString('ko-KR', {
@@ -49,7 +63,7 @@
 
 	<section class="glass-panel space-y-6">
 		<h2 class="text-2xl font-semibold text-peer-navy">모임 공유하기</h2>
-		<form class="space-y-5" method="post" action="?/create">
+                <form class="space-y-5" method="post" action="?/create" onsubmit={handleCreateSubmit}>
 			<label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
 				<span>제목</span>
 				<input
@@ -80,8 +94,34 @@
 			{#if serverMessage}
 				<p class="text-sm font-semibold text-rose-500" role="alert">{serverMessage}</p>
 			{/if}
-			<button type="submit" class="btn btn-primary">등록하기</button>
-		</form>
+                        <button type="submit" class="btn btn-primary" disabled={createSubmitting}>
+                                {#if createSubmitting}
+                                        <svg
+                                                class="h-4 w-4 animate-spin"
+                                                viewBox="0 0 24 24"
+                                                aria-hidden="true"
+                                        >
+                                                <circle
+                                                        class="opacity-25"
+                                                        cx="12"
+                                                        cy="12"
+                                                        r="10"
+                                                        stroke="currentColor"
+                                                        stroke-width="4"
+                                                        fill="none"
+                                                />
+                                                <path
+                                                        class="opacity-75"
+                                                        fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                />
+                                        </svg>
+                                        <span>등록 중…</span>
+                                {:else}
+                                        등록하기
+                                {/if}
+                        </button>
+                </form>
 	</section>
 
 	<section class="glass-panel space-y-6">

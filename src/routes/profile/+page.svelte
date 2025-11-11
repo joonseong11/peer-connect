@@ -29,25 +29,33 @@ import type { ActionData, PageData } from './$types';
 	const fieldError = (field: keyof typeof initialValues) => form?.errors?.[field] ?? null;
 	const avatarError = $derived(form?.errors?.avatar ?? null);
 	let showProfileCompleteModal = $state(false);
-	let handledForm: ProfileActionData | null = null;
+        let handledForm: ProfileActionData | null = null;
+        let profileSubmitting = $state(false);
 
 	$effect(() => {
-		if (!invite?.inviter_user_id) {
-			showProfileCompleteModal = false;
-			return;
-		}
+                if (!invite?.inviter_user_id) {
+                        profileSubmitting = false;
+                        showProfileCompleteModal = false;
+                        return;
+                }
 
-		if (!form) {
-			handledForm = null;
-			showProfileCompleteModal = false;
-			return;
-		}
+                if (!form) {
+                        handledForm = null;
+                        profileSubmitting = false;
+                        showProfileCompleteModal = false;
+                        return;
+                }
 
-		if (form !== handledForm) {
-			handledForm = form;
-			showProfileCompleteModal = Boolean(form.success && form.firstCompletion);
-		}
-	});
+                if (form !== handledForm) {
+                        handledForm = form;
+                        profileSubmitting = false;
+                        showProfileCompleteModal = Boolean(form.success && form.firstCompletion);
+                }
+        });
+
+        const handleProfileSubmit = () => {
+                profileSubmitting = true;
+        };
 
 	const MAX_AVATAR_DIMENSION = 512;
 	const TARGET_MAX_SIZE = 140 * 1024;
@@ -165,7 +173,12 @@ import type { ActionData, PageData } from './$types';
 		{/if}
 	</section>
 
-	<form method="post" class="glass-panel space-y-6" enctype="multipart/form-data">
+        <form
+                method="post"
+                class="glass-panel space-y-6"
+                enctype="multipart/form-data"
+                onsubmit={handleProfileSubmit}
+        >
 		<div class="flex flex-wrap items-center gap-5">
 			<img class="h-32 w-32 rounded-3xl border-4 border-slate-200/70 bg-slate-50 object-cover" src={previewUrl} alt="내 프로필 사진 미리보기" />
 			<div class="space-y-2 text-sm font-semibold text-slate-700">
@@ -295,11 +308,37 @@ import type { ActionData, PageData } from './$types';
 			<p class="text-sm font-semibold text-rose-500" role="alert">{form.serverMessage}</p>
 		{/if}
 
-		<div class="flex flex-wrap items-center gap-3">
-			<button type="submit" class="btn btn-primary">프로필 저장</button>
-			<a class="btn btn-secondary" href="/">홈으로 돌아가기</a>
-		</div>
-	</form>
+                <div class="flex flex-wrap items-center gap-3">
+                        <button type="submit" class="btn btn-primary" disabled={profileSubmitting}>
+                                {#if profileSubmitting}
+                                        <svg
+                                                class="h-4 w-4 animate-spin"
+                                                viewBox="0 0 24 24"
+                                                aria-hidden="true"
+                                        >
+                                                <circle
+                                                        class="opacity-25"
+                                                        cx="12"
+                                                        cy="12"
+                                                        r="10"
+                                                        stroke="currentColor"
+                                                        stroke-width="4"
+                                                        fill="none"
+                                                />
+                                                <path
+                                                        class="opacity-75"
+                                                        fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                />
+                                        </svg>
+                                        <span>저장 중…</span>
+                                {:else}
+                                        프로필 저장
+                                {/if}
+                        </button>
+                        <a class="btn btn-secondary" href="/">홈으로 돌아가기</a>
+                </div>
+        </form>
 </main>
 
 {#if showProfileCompleteModal && invite?.inviter_user_id}

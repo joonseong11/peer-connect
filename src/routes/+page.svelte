@@ -81,6 +81,16 @@
 const invitesEnabled = $derived(data.invitesEnabled ?? false);
 const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
 const inviteePrompt = $derived(data.inviteePrompt ?? null);
+let acknowledgeSubmittingIntent = $state<string | null>(null);
+let lastPromptId = $state<string | null>(null);
+
+$effect(() => {
+        const currentPromptId = inviteePrompt?.redemptionId ?? null;
+        if (currentPromptId !== lastPromptId) {
+                acknowledgeSubmittingIntent = null;
+                lastPromptId = currentPromptId;
+        }
+});
 
 	if (browser) {
 		const initSupabaseClient = () => {
@@ -116,8 +126,8 @@ const inviteePrompt = $derived(data.inviteePrompt ?? null);
 		localSession = data.session;
 	});
 
-	const handleGoogleSignIn = async () => {
-		authError = null;
+        const handleGoogleSignIn = async () => {
+                authError = null;
 
 		const client = supabase;
 
@@ -141,7 +151,12 @@ const inviteePrompt = $derived(data.inviteePrompt ?? null);
 			console.error('Google sign-in error', error);
 			authError = '로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.';
 		}
-	};
+        };
+
+        const handleAcknowledgeSubmit = (event: SubmitEvent) => {
+                const submitter = event.submitter as HTMLButtonElement | null;
+                acknowledgeSubmittingIntent = submitter?.value ?? null;
+        };
 </script>
 
 <svelte:head>
@@ -334,20 +349,85 @@ const inviteePrompt = $derived(data.inviteePrompt ?? null);
 			<p class="mt-2 text-sm text-slate-600">
 				{inviteePrompt.inviteeName ?? '새 동료'}님에게 추천서를 남겨보시겠어요?
 			</p>
-			<form method="post" action="?/acknowledgeInviteePrompt" class="mt-6 flex flex-wrap items-center justify-center gap-3">
-				<input type="hidden" name="redemptionId" value={inviteePrompt.redemptionId} />
-				<input
-					type="hidden"
-					name="next"
-					value={`/members/${inviteePrompt.inviteeUserId}?endorsementStatus=prompt`}
-				/>
-				<button type="submit" name="intent" value="visit" class="btn btn-primary">
-					예
-				</button>
-				<button type="submit" name="intent" value="dismiss" class="btn btn-secondary">
-					아니오
-				</button>
-			</form>
+                        <form
+                                method="post"
+                                action="?/acknowledgeInviteePrompt"
+                                class="mt-6 flex flex-wrap items-center justify-center gap-3"
+                                onsubmit={handleAcknowledgeSubmit}
+                        >
+                                <input type="hidden" name="redemptionId" value={inviteePrompt.redemptionId} />
+                                <input
+                                        type="hidden"
+                                        name="next"
+                                        value={`/members/${inviteePrompt.inviteeUserId}?endorsementStatus=prompt`}
+                                />
+                                <button
+                                        type="submit"
+                                        name="intent"
+                                        value="visit"
+                                        class="btn btn-primary"
+                                        disabled={acknowledgeSubmittingIntent !== null}
+                                >
+                                        {#if acknowledgeSubmittingIntent === 'visit'}
+                                                <svg
+                                                        class="h-4 w-4 animate-spin"
+                                                        viewBox="0 0 24 24"
+                                                        aria-hidden="true"
+                                                >
+                                                        <circle
+                                                                class="opacity-25"
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="10"
+                                                                stroke="currentColor"
+                                                                stroke-width="4"
+                                                                fill="none"
+                                                        />
+                                                        <path
+                                                                class="opacity-75"
+                                                                fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                        />
+                                                </svg>
+                                                <span>이동 중…</span>
+                                        {:else}
+                                                예
+                                        {/if}
+                                </button>
+                                <button
+                                        type="submit"
+                                        name="intent"
+                                        value="dismiss"
+                                        class="btn btn-secondary"
+                                        disabled={acknowledgeSubmittingIntent !== null}
+                                >
+                                        {#if acknowledgeSubmittingIntent === 'dismiss'}
+                                                <svg
+                                                        class="h-4 w-4 animate-spin"
+                                                        viewBox="0 0 24 24"
+                                                        aria-hidden="true"
+                                                >
+                                                        <circle
+                                                                class="opacity-25"
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="10"
+                                                                stroke="currentColor"
+                                                                stroke-width="4"
+                                                                fill="none"
+                                                        />
+                                                        <path
+                                                                class="opacity-75"
+                                                                fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                        />
+                                                </svg>
+                                                <span>처리 중…</span>
+                                        {:else}
+                                                아니오
+                                        {/if}
+                                </button>
+                        </form>
 		</div>
 	</div>
 {/if}
