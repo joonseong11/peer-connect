@@ -167,12 +167,12 @@ $effect(() => {
 	/>
 </svelte:head>
 
-<main class="mx-auto flex w-full max-w-5xl flex-col gap-14 px-5 pb-20 pt-16 sm:px-8 lg:gap-16">
+<main class="mx-auto flex w-full max-w-5xl flex-col gap-14 px-4 pb-20 pt-16 sm:px-8 lg:gap-16">
 	<section id="intro" class="glass-panel grid gap-10 md:grid-cols-2 md:items-center lg:p-12">
 		<div class="space-y-5">
 			<p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">PEER CONNECT</p>
 			<h1 class="text-3xl leading-tight text-peer-navy sm:text-4xl">
-				당신과 함께 성장하는<br />프라이빗 개발자 네트워크
+				당신과 함께 성장하는<br />프라이빗 네트워크
 			</h1>
 			<p class="max-w-xl text-base text-slate-600 sm:text-lg">
 				혼자서는 정보도 기회도 놓치기 쉽습니다. <br/>지금, 동료들과 연결되어 새로운 가능성을 여세요. <br/>함께 성장할 때, 배움은 더 빠르고 길도 더 선명해집니다.<br/><br/>
@@ -253,7 +253,7 @@ $effect(() => {
 				<p class="text-sm text-slate-500">지금 Google로 로그인하고 내 프로필을 작성해보세요.</p>
 			{/if}
 		</div>
-		<div class="rounded-3xl border border-slate-200/60 bg-white/80 p-8 shadow-lg backdrop-blur-xl sm:p-9">
+		<div class="rounded-3xl border border-slate-200/60 bg-white/80 p-4 shadow-lg backdrop-blur-xl sm:p-9">
 			<header class="space-y-1">
 				<h3 class="text-2xl font-semibold text-peer-navy">{sampleProfile.name}</h3>
 				<p class="text-sm text-slate-500">{sampleProfile.role}</p>
@@ -334,7 +334,10 @@ $effect(() => {
 				{/if}
 			{:else}
 			<div class="flex items-center gap-4">
-				<button class="btn btn-primary" type="button" onclick={handleGoogleSignIn}>Google 로그인하고 시작하기</button>
+				<button class="btn btn-primary" type="button" onclick={handleGoogleSignIn}>
+					<span class="sm:hidden whitespace-nowrap">로그인</span>
+					<span class="hidden sm:inline">Google 로그인하고 시작하기</span>
+				</button>
 				<span class="text-sm text-slate-500">초대장을 받았다면 로그인 후 가입을 완료할 수 있어요.</span>
 			</div>
 				{/if}
