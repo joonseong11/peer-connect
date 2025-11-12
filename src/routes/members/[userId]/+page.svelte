@@ -54,6 +54,8 @@
 
 		return items;
 	})();
+
+	const isOwnProfile = $derived(profile?.user_id === session?.user.id);
 </script>
 
 <svelte:head>
@@ -71,16 +73,21 @@
 {:else}
 	<main class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-5 pb-16 pt-14 sm:px-8">
 		<section class="glass-panel space-y-6">
-			<div class="space-y-3">
-				<a class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 " href="/members">
-					← 동료 프로필 둘러보기
-				</a>
-				<h1 class="text-3xl font-semibold text-peer-navy">{profile.full_name}</h1>
-				{#if statusMessage}
-					<p class="text-sm font-semibold text-peer-indigo" role="status">{statusMessage}</p>
-				{/if}
-				{#if loadError}
-					<p class="text-sm font-semibold text-rose-500" role="alert">{loadError}</p>
+			<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+				<div class="space-y-3">
+					<a class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 " href="/members">
+						← 동료 프로필 둘러보기
+					</a>
+					<h1 class="text-3xl font-semibold text-peer-navy">{profile.full_name}</h1>
+					{#if statusMessage}
+						<p class="text-sm font-semibold text-peer-indigo" role="status">{statusMessage}</p>
+					{/if}
+					{#if loadError}
+						<p class="text-sm font-semibold text-rose-500" role="alert">{loadError}</p>
+					{/if}
+				</div>
+				{#if isOwnProfile}
+					<a class="btn btn-secondary self-start sm:self-auto" href="/profile">프로필 수정하기</a>
 				{/if}
 			</div>
 
@@ -146,11 +153,11 @@
 				<p class="rounded-2xl bg-indigo-50/70 px-4 py-3 text-sm font-semibold text-indigo-600">
 					이미 이 동료에게 추천을 남겼어요. 내용을 다시 작성하려면 아래에서 삭제 후 새로 작성해주세요.
 				</p>
-			{:else if profile.user_id === session?.user.id}
+			{:else if isOwnProfile}
 				<p class="rounded-2xl bg-slate-100/70 px-4 py-3 text-sm text-slate-500">나의 프로필에는 추천을 남길 수 없어요.</p>
 			{/if}
 
-			{#if !existingEndorsementId && profile.user_id !== session?.user.id}
+			{#if !existingEndorsementId && !isOwnProfile}
 				<form method="post" action="?/endorse" class="space-y-4">
 					<label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
 						<span>추천 내용 (최소 20자)</span>
