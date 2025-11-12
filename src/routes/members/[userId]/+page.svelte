@@ -72,7 +72,7 @@
 	<main class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-5 pb-16 pt-14 sm:px-8">
 		<section class="glass-panel space-y-6">
 			<div class="space-y-3">
-				<a class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 hover:underline" href="/members">
+				<a class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 " href="/members">
 					← 동료 프로필 둘러보기
 				</a>
 				<h1 class="text-3xl font-semibold text-peer-navy">{profile.full_name}</h1>

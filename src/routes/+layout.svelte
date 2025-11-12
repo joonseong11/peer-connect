@@ -8,7 +8,7 @@
 <div class="flex min-h-screen flex-col">
 	<AppHeader session={data?.session ?? null} />
 
-	<div class="flex flex-1 flex-col px-5 py-6 sm:px-8">
+	<div class="flex flex-1 flex-col px-0 py-6 sm:px-8">
 		{@render children()}
 	</div>
 

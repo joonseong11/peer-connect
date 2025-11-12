@@ -85,7 +85,7 @@
 </svelte:head>
 
 <main class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-5 pb-16 pt-14 sm:px-8">
-	<a class="inline-flex w-fit items-center gap-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 hover:underline" href="/gatherings">
+	<a class="inline-flex w-fit items-center gap-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 " href="/gatherings">
 		← 모임 목록으로
 	</a>
 

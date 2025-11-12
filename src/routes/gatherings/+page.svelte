@@ -34,7 +34,7 @@
 
 <main class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-5 pb-16 pt-14 sm:px-8">
 	<section class="glass-panel space-y-4">
-		<a class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 hover:underline" href="/">
+		<a class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 " href="/">
 			← 홈으로
 		</a>
 		<h1 class="text-3xl font-semibold text-peer-navy">모임 라운지</h1>
