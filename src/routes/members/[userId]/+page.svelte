@@ -143,7 +143,7 @@
 						{#if profile.career_history}
 							<ul class="space-y-2">
 								{#each profile.career_history.split('\n').filter(Boolean) as line}
-									<li class="relative pl-5 text-sm text-slate-600 before:absolute before:left-0 before:top-2 before:h-2 before:w-2 before:rounded-full before:bg-gradient-to-br before:from-peer-sky before:to-peer-indigo before:content-['']">
+                                                                        <li class="relative pl-5 text-sm text-slate-600 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:transform before:h-2 before:w-2 before:rounded-full before:bg-gradient-to-br before:from-peer-sky before:to-peer-indigo before:content-['']">
 										{line}
 									</li>
 								{/each}
