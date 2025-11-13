@@ -1,9 +1,14 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
 
-	const { data, form } = $props<{ data: PageData; form: ActionData }>();
+        const { data, form } = $props<{ data: PageData; form: ActionData }>();
 
-	const { profile, endorsements, existingEndorsementId, statusMessage, loadError, session } = data;
+        const profile = $derived(data.profile);
+        const endorsements = $derived(data.endorsements);
+        const existingEndorsementId = $derived(data.existingEndorsementId);
+        const statusMessage = $derived(data.statusMessage);
+        const loadError = $derived(data.loadError);
+        const session = $derived(data.session);
 	const defaultAvatar = '/images/default-profile.svg';
 	const values = $derived<Record<string, string>>(form?.values ?? { content: '' });
 	const contentError = $derived(form?.errors?.content ?? null);
@@ -37,43 +42,43 @@
 		external: boolean;
 	};
 
-	const contactItems: ContactItem[] = (() => {
-		if (!profile) {
-			return [];
-		}
+        const contactItems = $derived.by<ContactItem[]>(() => {
+                if (!profile) {
+                        return [];
+                }
 
-		const stripProtocol = (url: string) => url.replace(/^https?:\/\//, '');
-		const items: ContactItem[] = [];
+                const stripProtocol = (url: string) => url.replace(/^https?:\/\//, '');
+                const items: ContactItem[] = [];
 
-		if (profile.contact_linkedin) {
-			items.push({
-				label: 'LinkedIn',
-				value: stripProtocol(profile.contact_linkedin),
-				href: profile.contact_linkedin,
-				external: true
-			});
-		}
+                if (profile.contact_linkedin) {
+                        items.push({
+                                label: 'LinkedIn',
+                                value: stripProtocol(profile.contact_linkedin),
+                                href: profile.contact_linkedin,
+                                external: true
+                        });
+                }
 
-		if (profile.contact_github) {
-			items.push({
-				label: 'GitHub',
-				value: stripProtocol(profile.contact_github),
-				href: profile.contact_github,
-				external: true
-			});
-		}
+                if (profile.contact_github) {
+                        items.push({
+                                label: 'GitHub',
+                                value: stripProtocol(profile.contact_github),
+                                href: profile.contact_github,
+                                external: true
+                        });
+                }
 
-		if (profile.contact_email) {
-			items.push({
-				label: '이메일',
-				value: profile.contact_email,
-				href: `mailto:${profile.contact_email}`,
-				external: false
-			});
-		}
+                if (profile.contact_email) {
+                        items.push({
+                                label: '이메일',
+                                value: profile.contact_email,
+                                href: `mailto:${profile.contact_email}`,
+                                external: false
+                        });
+                }
 
-		return items;
-	})();
+                return items;
+        });
 </script>
 
 <svelte:head>
