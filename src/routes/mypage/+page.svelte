@@ -3,24 +3,34 @@
 
 	const { data, form } = $props<{ data: PageData; form: ActionData }>();
 
-	const preferences = $derived(form?.preferences ?? data.preferences);
-	const updateSucceeded = $derived(form?.success ?? false);
-	const updateMessage = $derived(form?.message ?? null);
-	const updateError = $derived(form?.updateError ?? null);
-	const deleteError = $derived(form?.deleteError ?? null);
-	const loadError = $derived(data.loadError ?? null);
-	const adminClientAvailable = $derived(data.adminClientAvailable);
-	const preferencesAvailable = $derived(data.preferencesAvailable);
-	const profileExists = $derived(data.profileExists ?? false);
-	const invitesEnabled = $derived(data.invitesEnabled ?? false);
+        const updateSucceeded = $derived(form?.success ?? false);
+        const updateMessage = $derived(form?.message ?? null);
+        const updateError = $derived(form?.updateError ?? null);
+        const deleteError = $derived(form?.deleteError ?? null);
+        const loadError = $derived(data.loadError ?? null);
+        const adminClientAvailable = $derived(data.adminClientAvailable);
+        const preferencesAvailable = $derived(data.preferencesAvailable);
+        const profileExists = $derived(data.profileExists ?? false);
+        const invitesEnabled = $derived(data.invitesEnabled ?? false);
 
         let handledForm: ActionData | null = null;
+        let handledPreferences = data.preferences;
+        let notifyEndorsements = $state(data.preferences.endorsements);
+        let notifyGatherings = $state(data.preferences.gatherings);
+        let notifyComments = $state(data.preferences.comments);
         let preferencesSubmitting = $state(false);
         let deleteSubmitting = $state(false);
 
         $effect(() => {
-                if (form !== handledForm) {
-                        handledForm = form ?? null;
+                const nextForm = form ?? null;
+                const nextPreferences = form?.preferences ?? data.preferences;
+
+                if (nextForm !== handledForm || nextPreferences !== handledPreferences) {
+                        handledForm = nextForm;
+                        handledPreferences = nextPreferences;
+                        notifyEndorsements = nextPreferences.endorsements;
+                        notifyGatherings = nextPreferences.gatherings;
+                        notifyComments = nextPreferences.comments;
                         preferencesSubmitting = false;
                         deleteSubmitting = false;
                 }
@@ -125,9 +135,9 @@
 						id="notify_endorsements"
 						name="notify_endorsements"
 						type="checkbox"
-						checked={preferences.endorsements}
-						class="mt-1 h-5 w-5 rounded-md border-slate-300 text-peer-indigo"
-					/>
+                                                bind:checked={notifyEndorsements}
+                                                class="mt-1 h-5 w-5 rounded-md border-slate-300 text-peer-indigo"
+                                        />
 					<div class="space-y-1">
 						<span class="block text-sm font-semibold text-peer-navy">동료 추천 알림</span>
 						<span class="block text-xs text-slate-500">누군가 나에게 추천서를 작성하면 이메일로 알려드려요.</span>
@@ -139,9 +149,9 @@
 						id="notify_gatherings"
 						name="notify_gatherings"
 						type="checkbox"
-						checked={preferences.gatherings}
-						class="mt-1 h-5 w-5 rounded-md border-slate-300 text-peer-indigo"
-					/>
+                                                bind:checked={notifyGatherings}
+                                                class="mt-1 h-5 w-5 rounded-md border-slate-300 text-peer-indigo"
+                                        />
 					<div class="space-y-1">
 						<span class="block text-sm font-semibold text-peer-navy">모임 라운지 새 글</span>
 						<span class="block text-xs text-slate-500">새로운 모임이 올라오면 놓치지 않도록 이메일로 안내해요.</span>
@@ -153,9 +163,9 @@
 						id="notify_comments"
 						name="notify_comments"
 						type="checkbox"
-						checked={preferences.comments}
-						class="mt-1 h-5 w-5 rounded-md border-slate-300 text-peer-indigo"
-					/>
+                                                bind:checked={notifyComments}
+                                                class="mt-1 h-5 w-5 rounded-md border-slate-300 text-peer-indigo"
+                                        />
 					<div class="space-y-1">
 						<span class="block text-sm font-semibold text-peer-navy">댓글 알림</span>
 						<span class="block text-xs text-slate-500">내 글이나 추천에 댓글이 달리면 이메일로 알려드릴게요.</span>
