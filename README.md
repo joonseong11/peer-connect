@@ -157,11 +157,11 @@ with check (auth.uid() = author_id);
 | Key | Description |
 | --- | --- |
 | `RESEND_API_KEY` | Resend API Key (서버 전용) |
-| `RESEND_FROM_EMAIL` | 발신 이메일 주소 (예: `Peer Connect <no-reply@yourdomain.com>`) |
+| `RESEND_FROM_EMAIL` | 발신 이메일 주소 (예: `Peer Connect <thenetwork@peer-connect.co.kr>`) |
 | `RESEND_REPLY_TO_EMAIL` (optional) | 회신을 받을 이메일 주소. 비워두면 발신 주소가 그대로 사용됩니다. |
 | `PUBLIC_APP_URL` | 이메일 링크에 사용할 서비스 기본 URL (예: `https://peerconnect.example.com`) |
 
-`PUBLIC_APP_URL` 값은 개발 환경에서 `http://localhost:5173`로 지정해두면 편리합니다. `RESEND_FROM_EMAIL`을 `no-reply@`처럼 회신을 받지 않는 사서함으로 설정해도 무방하지만, 실제로 답장을 받을 수 있는 받은편지함이 있다면 그 주소를 `RESEND_REPLY_TO_EMAIL`에 지정하세요. Resend가 아닌 다른 서비스(예: AWS SES)를 사용한다면 `src/lib/server/email.ts`를 원하는 클라이언트 코드로 커스터마이징하세요.
+`PUBLIC_APP_URL` 값은 개발 환경에서 `http://localhost:5173`로 지정해두면 편리합니다. `RESEND_FROM_EMAIL`을 `no-reply@`처럼 회신을 받지 않는 사서함으로 설정해도 무방하지만, 실제로 답장을 받을 수 있는 받은편지함이 있다면 그 주소를 `RESEND_REPLY_TO_EMAIL`에 지정하세요. 별도의 값을 지정하지 않으면 기본 발신 주소는 `thenetwork@peer-connect.co.kr`로 설정됩니다. Resend가 아닌 다른 서비스(예: AWS SES)를 사용한다면 `src/lib/server/email.ts`를 원하는 클라이언트 코드로 커스터마이징하세요.
 
 ### Profile Photo Storage
 
