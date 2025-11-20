@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { INVITES_ENABLED } from '$lib/config';
 import { hasProfileEmailColumn } from '$lib/server/profileEmailColumn';
 import { normalizeEmail } from '$lib/utils/normalizeEmail';
+import { getProfileFallbacks } from '$lib/server/profileDefaults';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
@@ -44,16 +45,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		}
 
                 if (!profileLookupError && !profileRecord) {
-                        const fallbackName =
-                                typeof session.user.user_metadata?.full_name === 'string' &&
-                                session.user.user_metadata.full_name.trim().length > 0
-                                        ? session.user.user_metadata.full_name.trim()
-					: session.user.email ?? '새 멤버';
-			const fallbackRole =
-				typeof session.user.user_metadata?.title === 'string' &&
-                                session.user.user_metadata.title.trim().length > 0
-                                        ? session.user.user_metadata.title.trim()
-                                        : '직무 미정';
+                        const { full_name: fallbackName, role: fallbackRole } = getProfileFallbacks(session);
 
                         const profilePayload: Record<string, unknown> = {
                                 user_id: session.user.id,
