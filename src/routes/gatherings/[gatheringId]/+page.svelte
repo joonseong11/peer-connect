@@ -115,6 +115,29 @@
                 commentDeleteSubmittingId = commentId;
         };
 
+        const urlPattern = /https?:\/\/[^\s]+/g;
+
+        const parseLine = (line: string) => {
+                const segments: { type: 'text' | 'link'; value: string }[] = [];
+                let lastIndex = 0;
+
+                for (const match of line.matchAll(urlPattern)) {
+                        if (match.index === undefined) continue;
+                        if (match.index > lastIndex) {
+                                segments.push({ type: 'text', value: line.slice(lastIndex, match.index) });
+                        }
+
+                        segments.push({ type: 'link', value: match[0] });
+                        lastIndex = match.index + match[0].length;
+                }
+
+                if (lastIndex < line.length) {
+                        segments.push({ type: 'text', value: line.slice(lastIndex) });
+                }
+
+                return segments.length ? segments : [{ type: 'text', value: line }];
+        };
+
 	const formatDateTime = (value: string) =>
 		new Date(value).toLocaleString('ko-KR', {
 			year: 'numeric',
@@ -277,15 +300,30 @@
                                         {/if}
                                 </button>
                         </form>
-		{:else}
-			<h1 class="text-3xl font-semibold text-peer-navy">{post.title}</h1>
-			<div class="space-y-4 text-base leading-relaxed text-slate-700">
-				{#each post.content.split('\n') as line, index (index)}
-					<p>{line}</p>
-				{/each}
-			</div>
-		{/if}
-	</article>
+                {:else}
+                        <h1 class="text-3xl font-semibold text-peer-navy">{post.title}</h1>
+                        <div class="space-y-4 text-base leading-relaxed text-slate-700">
+                                {#each post.content.split('\n') as line, index (index)}
+                                        <p class="whitespace-pre-wrap break-words">
+                                                {#each parseLine(line) as segment, segmentIndex (segmentIndex)}
+                                                        {#if segment.type === 'link'}
+                                                                <a
+                                                                        class="text-blue-600 underline break-words"
+                                                                        href={segment.value}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                >
+                                                                        {segment.value}
+                                                                </a>
+                                                        {:else}
+                                                                {segment.value}
+                                                        {/if}
+                                                {/each}
+                                        </p>
+                                {/each}
+                        </div>
+                {/if}
+        </article>
 
 	<section class="glass-panel space-y-6">
 		<header class="space-y-1">
