@@ -103,10 +103,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 	};
 };
 
+const parseBooleanField = (
+        value: FormDataEntryValue | null,
+        fallback: boolean
+): boolean => {
+        if (value === null) return fallback;
+        if (typeof value === 'string') return value === 'true';
+
+        return fallback;
+};
+
 const parsePreferences = (formData: FormData): NotificationPreferences => ({
-	endorsements: formData.has(COLUMN_MAP.endorsements),
-	gatherings: formData.has(COLUMN_MAP.gatherings),
-	comments: formData.has(COLUMN_MAP.comments)
+        endorsements: parseBooleanField(formData.get(COLUMN_MAP.endorsements), DEFAULT_PREFERENCES.endorsements),
+        gatherings: parseBooleanField(formData.get(COLUMN_MAP.gatherings), DEFAULT_PREFERENCES.gatherings),
+        comments: parseBooleanField(formData.get(COLUMN_MAP.comments), DEFAULT_PREFERENCES.comments)
 });
 
 export const actions: Actions = {
