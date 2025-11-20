@@ -500,7 +500,7 @@
                                                                 </div>
                                                         </form>
 						{:else}
-							<p class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{comment.content}</p>
+                                                        <p class="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">{comment.content}</p>
 						{/if}
 
                                                 {#if replyingToCommentId === comment.id}
@@ -709,7 +709,7 @@
                                                                                                 </div>
                                                                                         </form>
 										{:else}
-											<p class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{reply.content}</p>
+                                                                                    <p class="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">{reply.content}</p>
 										{/if}
 									</li>
 								{/each}
