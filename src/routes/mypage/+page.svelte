@@ -126,11 +126,13 @@
 			<fieldset class="space-y-5" disabled={!preferencesAvailable}>
 				<legend class="text-lg font-semibold text-peer-navy">이메일 알림</legend>
 
-				<label class="flex items-start gap-4 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-4 transition focus-within:border-peer-indigo/70 focus-within:ring-2 focus-within:ring-peer-indigo/20">
-					<input
-						id="notify_endorsements"
-						name="notify_endorsements"
-						type="checkbox"
+                                <label class="flex items-start gap-4 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-4 transition focus-within:border-peer-indigo/70 focus-within:ring-2 focus-within:ring-peer-indigo/20">
+                                        <input name="notify_endorsements" type="hidden" value="false" />
+                                        <input
+                                                id="notify_endorsements"
+                                                name="notify_endorsements"
+                                                type="checkbox"
+                                                value="true"
                                                 bind:checked={preferencesState.endorsements}
                                                 class="mt-1 h-5 w-5 rounded-md border-slate-300 text-peer-indigo"
                                         />
@@ -140,11 +142,13 @@
 					</div>
 				</label>
 
-				<label class="flex items-start gap-4 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-4 transition focus-within:border-peer-indigo/70 focus-within:ring-2 focus-within:ring-peer-indigo/20">
-					<input
-						id="notify_gatherings"
-						name="notify_gatherings"
-						type="checkbox"
+                                <label class="flex items-start gap-4 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-4 transition focus-within:border-peer-indigo/70 focus-within:ring-2 focus-within:ring-peer-indigo/20">
+                                        <input name="notify_gatherings" type="hidden" value="false" />
+                                        <input
+                                                id="notify_gatherings"
+                                                name="notify_gatherings"
+                                                type="checkbox"
+                                                value="true"
                                                 bind:checked={preferencesState.gatherings}
                                                 class="mt-1 h-5 w-5 rounded-md border-slate-300 text-peer-indigo"
                                         />
@@ -154,11 +158,13 @@
 					</div>
 				</label>
 
-				<label class="flex items-start gap-4 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-4 transition focus-within:border-peer-indigo/70 focus-within:ring-2 focus-within:ring-peer-indigo/20">
-					<input
-						id="notify_comments"
-						name="notify_comments"
-						type="checkbox"
+                                <label class="flex items-start gap-4 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-4 transition focus-within:border-peer-indigo/70 focus-within:ring-2 focus-within:ring-peer-indigo/20">
+                                        <input name="notify_comments" type="hidden" value="false" />
+                                        <input
+                                                id="notify_comments"
+                                                name="notify_comments"
+                                                type="checkbox"
+                                                value="true"
                                                 bind:checked={preferencesState.comments}
                                                 class="mt-1 h-5 w-5 rounded-md border-slate-300 text-peer-indigo"
                                         />
