@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from '$lib/server/supabaseAdmin';
 import { hasProfileEmailColumn } from '$lib/server/profileEmailColumn';
 import { INVITES_ENABLED } from '$lib/config';
 import { normalizeEmail } from '$lib/utils/normalizeEmail';
+import { getProfileFallbacks } from '$lib/server/profileDefaults';
 import type { Actions, PageServerLoad } from './$types';
 
 type NotificationPreferences = {
@@ -120,22 +121,68 @@ export const actions: Actions = {
                 const preferences = parsePreferences(formData);
 
                 const emailColumnAvailable = await hasProfileEmailColumn(locals.supabase);
+                const normalizedEmail = normalizeEmail(session.user.email ?? null);
+
+                const { data: existingProfile, error: profileLookupError } = await locals.supabase
+                        .from('profiles')
+                        .select('user_id')
+                        .eq('user_id', session.user.id)
+                        .maybeSingle();
+
+                if (profileLookupError) {
+                        console.error(
+                                '[mypage] Failed to verify existing profile before updating notification preferences',
+                                profileLookupError
+                        );
+                        return fail(500, {
+                                preferences,
+                                updateError: '알림 설정을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.'
+                        });
+                }
+
+                if (!existingProfile) {
+                        const { full_name: fallbackName, role: fallbackRole } = getProfileFallbacks(session);
+                        const profilePayload: Record<string, unknown> = {
+                                user_id: session.user.id,
+                                full_name: fallbackName,
+                                role: fallbackRole
+                        };
+
+                        if (emailColumnAvailable && normalizedEmail) {
+                                profilePayload.email = normalizedEmail;
+                        }
+
+                        const { error: createProfileError } = await locals.supabase
+                                .from('profiles')
+                                .insert(profilePayload);
+
+                        if (createProfileError) {
+                                console.error(
+                                        '[mypage] Failed to create default profile before updating notification preferences',
+                                        createProfileError
+                                );
+                                return fail(500, {
+                                        preferences,
+                                        updateError: '알림 설정을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.'
+                                });
+                        }
+                }
 
                 const payload: Record<string, unknown> = {
-                        user_id: session.user.id,
                         [COLUMN_MAP.endorsements]: preferences.endorsements,
                         [COLUMN_MAP.gatherings]: preferences.gatherings,
                         [COLUMN_MAP.comments]: preferences.comments,
                         updated_at: new Date().toISOString()
                 };
 
-                if (emailColumnAvailable) {
-                        payload.email = normalizeEmail(session.user.email ?? null);
+                if (emailColumnAvailable && normalizedEmail) {
+                        payload.email = normalizedEmail;
                 }
 
-		const { error } = await locals.supabase.from('profiles').upsert(payload, {
-			onConflict: 'user_id'
-		});
+                const { error } = await locals.supabase
+                        .from('profiles')
+                        .update(payload)
+                        .eq('user_id', session.user.id);
 
 		if (error) {
 			if (isColumnMissingError(error)) {
