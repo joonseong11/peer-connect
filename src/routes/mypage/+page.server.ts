@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from '$lib/server/supabaseAdmin';
 import { hasProfileEmailColumn } from '$lib/server/profileEmailColumn';
 import { INVITES_ENABLED } from '$lib/config';
 import { normalizeEmail } from '$lib/utils/normalizeEmail';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Actions, PageServerLoad } from './$types';
 
 type NotificationPreferences = {
@@ -30,10 +31,10 @@ const isColumnMissingError = (error: unknown) =>
 	(error as { code?: string }).code === '42703';
 
 const isPermissionError = (error: unknown) =>
-	typeof error === 'object' &&
-	error !== null &&
-	'code' in error &&
-	(error as { code?: string }).code === '42501';
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: string }).code === '42501';
 
 const isTableMissingError = (error: unknown) =>
 	typeof error === 'object' &&
@@ -103,10 +104,23 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 const parsePreferences = (formData: FormData): NotificationPreferences => ({
-	endorsements: formData.has(COLUMN_MAP.endorsements),
-	gatherings: formData.has(COLUMN_MAP.gatherings),
-	comments: formData.has(COLUMN_MAP.comments)
+        endorsements: formData.has(COLUMN_MAP.endorsements),
+        gatherings: formData.has(COLUMN_MAP.gatherings),
+        comments: formData.has(COLUMN_MAP.comments)
 });
+
+const ensureProfileExists = async (client: SupabaseClient, userId: string) => {
+        const { count, error } = await client
+                .from('profiles')
+                .select('user_id', { head: true, count: 'exact' })
+                .eq('user_id', userId);
+
+        if (error) {
+                return { count: null as number | null, error };
+        }
+
+        return { count, error: null };
+};
 
 export const actions: Actions = {
 	updatePreferences: async ({ request, locals }) => {
@@ -133,32 +147,70 @@ export const actions: Actions = {
                         payload.email = normalizeEmail(session.user.email ?? null);
                 }
 
-		const { error } = await locals.supabase.from('profiles').upsert(payload, {
-			onConflict: 'user_id'
-		});
+                const adminClient = getSupabaseAdminClient();
+                const targetClient = locals.supabase;
+                const { count: profileCount, error: profileCountError } = await ensureProfileExists(
+                        targetClient,
+                        session.user.id
+                );
 
-		if (error) {
-			if (isColumnMissingError(error)) {
-				return fail(500, {
-					preferences,
-					updateError:
-						'알림 설정 컬럼이 준비되지 않았습니다. 데이터베이스에 notify_* 컬럼을 추가해주세요.'
-				});
-			}
+                if (profileCountError) {
+                        if (isColumnMissingError(profileCountError)) {
+                                return fail(500, {
+                                        preferences,
+                                        updateError:
+                                                '알림 설정 컬럼이 준비되지 않았습니다. 데이터베이스에 notify_* 컬럼을 추가해주세요.'
+                                });
+                        }
 
-			console.error('[mypage] Failed to update notification preferences', error);
-			return fail(500, {
-				preferences,
-				updateError: '알림 설정을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.'
-			});
-		}
+                        console.error('[mypage] Failed to check profile existence', profileCountError);
+                        return fail(500, {
+                                preferences,
+                                updateError: '알림 설정을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.'
+                        });
+                }
 
-		return {
-			success: true,
-			preferences,
-			message: '알림 설정을 저장했습니다.'
-		};
-	},
+                const shouldInsert = !profileCount || profileCount < 1;
+
+                const performUpsert = async (client: SupabaseClient) => {
+                        if (shouldInsert) {
+                                return client.from('profiles').insert(payload, { returning: 'minimal' });
+                        }
+
+                        return client
+                                .from('profiles')
+                                .update(payload, { returning: 'minimal' })
+                                .eq('user_id', session.user.id);
+                };
+
+                let { error: writeError } = await performUpsert(targetClient);
+
+                if (writeError && isPermissionError(writeError) && adminClient) {
+                        ({ error: writeError } = await performUpsert(adminClient));
+                }
+
+                if (writeError) {
+                        if (isColumnMissingError(writeError)) {
+                                return fail(500, {
+                                        preferences,
+                                        updateError:
+                                                '알림 설정 컬럼이 준비되지 않았습니다. 데이터베이스에 notify_* 컬럼을 추가해주세요.'
+                                });
+                        }
+
+                        console.error('[mypage] Failed to upsert notification preferences', writeError);
+                        return fail(500, {
+                                preferences,
+                                updateError: '알림 설정을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.'
+                        });
+                }
+
+                return {
+                        success: true,
+                        preferences,
+                        message: '알림 설정을 저장했습니다.'
+                };
+        },
 	deleteAccount: async ({ locals }) => {
 		const session = await locals.getSession();
 
