@@ -1,5 +1,8 @@
 import { RESEND_API_KEY, RESEND_FROM_EMAIL, RESEND_REPLY_TO_EMAIL } from '$env/static/private';
 
+const DEFAULT_FROM_EMAIL = 'thenetwork@peer-connect.co.kr';
+const FROM_EMAIL = RESEND_FROM_EMAIL?.trim() || DEFAULT_FROM_EMAIL;
+
 type EmailRecipient = string | { name?: string | null; email: string };
 
 type ListUnsubscribeOptions = {
@@ -48,8 +51,8 @@ const buildListUnsubscribeHeader = (options?: ListUnsubscribeOptions) => {
 };
 
 export const sendEmail = async (options: SendEmailOptions) => {
-        if (!RESEND_API_KEY || !RESEND_FROM_EMAIL) {
-                console.warn('[email] RESEND_API_KEY or RESEND_FROM_EMAIL is not configured; skipping email send.');
+        if (!RESEND_API_KEY) {
+                console.warn('[email] RESEND_API_KEY is not configured; skipping email send.');
                 return { ok: false, skipped: true };
         }
 
@@ -59,7 +62,7 @@ export const sendEmail = async (options: SendEmailOptions) => {
         const replyTo = options.replyTo ?? (fallbackReplyTo ? fallbackReplyTo : undefined);
 
         const payload: Record<string, unknown> = {
-                from: RESEND_FROM_EMAIL,
+                from: FROM_EMAIL,
                 to: to.map(formatRecipient),
                 subject: options.subject,
                 html: options.html,
