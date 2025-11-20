@@ -274,7 +274,7 @@
 									})}
 								</time>
 							</header>
-							<p class="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{endorsement.content}</p>
+                                                        <p class="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">{endorsement.content}</p>
                                                         {#if endorsement.author_id === session?.user.id}
                                                                 <form
                                                                         method="post"
