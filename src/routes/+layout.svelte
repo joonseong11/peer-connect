@@ -15,6 +15,9 @@
 	<footer class="border-t border-slate-200/60 bg-white/90 backdrop-blur-xl">
 		<div class="mx-auto max-w-5xl px-5 pb-7 pt-6 text-center sm:px-8">
 			<p class="text-sm font-semibold text-slate-600">Peer Connect</p>
+			<div class="mt-4 flex justify-center space-x-4 text-sm text-slate-500">
+				<a href="/privacy" class="hover:text-slate-800 hover:underline">개인정보처리방침</a>
+			</div>
 		</div>
 	</footer>
 </div>
