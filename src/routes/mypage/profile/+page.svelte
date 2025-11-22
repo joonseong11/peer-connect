@@ -1,5 +1,5 @@
 <script lang="ts">
-        import { UserRoundCog } from 'lucide-svelte';
+        import { PencilLine, UserRoundCog } from 'lucide-svelte';
         import type { PageData } from './$types';
 
         const { data } = $props<{ data: PageData }>();
@@ -101,7 +101,7 @@
                                 <div class="flex flex-wrap items-center gap-3">
                                         <a class="btn btn-secondary" href="/mypage">마이페이지</a>
                                         <a class="btn btn-primary" href="/profile">
-                                                <UserRoundCog class="h-4 w-4" />
+                                                <PencilLine class="h-4 w-4" />
                                                 <span>프로필 수정하기</span>
                                         </a>
                                 </div>
@@ -121,6 +121,10 @@
                                                 alt={`${profile.full_name} 프로필 이미지`}
                                         />
                                         <p class="text-sm font-semibold text-slate-500">{profile.role || '직군 정보 미입력'}</p>
+                                        <a class="btn btn-secondary" href="/profile">
+                                                <UserRoundCog class="h-4 w-4" />
+                                                <span>프로필 설정 이동</span>
+                                        </a>
                                 </div>
                                 <div class="space-y-6">
                                         <section class="space-y-2">
