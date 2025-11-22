@@ -155,20 +155,20 @@ import type { ActionData, PageData } from './$types';
 </script>
 
 <svelte:head>
-	<title>내 프로필 · Peer Connect</title>
-	<meta name="description" content="Peer Connect에서 나의 커리어와 성장 스토리를 소개하세요." />
+        <title>프로필 설정 · Peer Connect</title>
+        <meta name="description" content="Peer Connect에서 내 프로필을 설정하고 정보를 최신 상태로 유지하세요." />
 </svelte:head>
 
 <main class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-5 pb-16 pt-14 sm:px-8">
-	<section class="glass-panel space-y-4">
-		<h1 class="text-3xl font-semibold text-peer-navy">내 프로필</h1>
-		<p class="text-slate-600">
-			Peer Connect 멤버들이 당신을 이해할 수 있도록 경력과 강점을 자세히 작성해주세요. 작성한 내용은 초대된 멤버들에게
-			공개됩니다.
-		</p>
-		{#if loadError}
-			<p class="text-sm font-semibold text-rose-500" role="alert">{loadError}</p>
-		{:else if submitSucceeded}
+        <section class="glass-panel space-y-4">
+                <h1 class="text-3xl font-semibold text-peer-navy">프로필 설정</h1>
+                <p class="text-slate-600">
+                        프로필을 정리해 두면 초대한 동료에게 더 잘 소개할 수 있어요. 최신 정보를 입력해 두면 추천서와 함께 나를 표현하기
+                        좋아요.
+                </p>
+                {#if loadError}
+                        <p class="text-sm font-semibold text-rose-500" role="alert">{loadError}</p>
+                {:else if submitSucceeded}
 			<p class="text-sm font-semibold text-peer-indigo" role="status">프로필이 업데이트되었습니다.</p>
 		{/if}
 	</section>
