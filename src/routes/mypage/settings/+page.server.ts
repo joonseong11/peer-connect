@@ -102,19 +102,22 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 const parseBooleanField = (
-        value: FormDataEntryValue | null,
-        fallback: boolean
+	values: FormDataEntryValue[],
+	fallback: boolean
 ): boolean => {
-        if (value === null) return fallback;
-        if (typeof value === 'string') return value === 'true';
+	if (values.length === 0) return fallback;
+	
+	// The last value is the one that counts (checkbox overrides hidden input)
+	const value = values[values.length - 1];
+	if (typeof value === 'string') return value === 'true';
 
-        return fallback;
+	return fallback;
 };
 
 const parsePreferences = (formData: FormData): NotificationPreferences => ({
-        endorsements: parseBooleanField(formData.get(COLUMN_MAP.endorsements), DEFAULT_PREFERENCES.endorsements),
-        gatherings: parseBooleanField(formData.get(COLUMN_MAP.gatherings), DEFAULT_PREFERENCES.gatherings),
-        comments: parseBooleanField(formData.get(COLUMN_MAP.comments), DEFAULT_PREFERENCES.comments)
+	endorsements: parseBooleanField(formData.getAll(COLUMN_MAP.endorsements), DEFAULT_PREFERENCES.endorsements),
+	gatherings: parseBooleanField(formData.getAll(COLUMN_MAP.gatherings), DEFAULT_PREFERENCES.gatherings),
+	comments: parseBooleanField(formData.getAll(COLUMN_MAP.comments), DEFAULT_PREFERENCES.comments)
 });
 
 export const actions: Actions = {
