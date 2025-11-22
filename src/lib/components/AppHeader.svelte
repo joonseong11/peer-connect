@@ -2,7 +2,7 @@
 	import type { Session } from '@supabase/supabase-js';
 	import { page } from '$app/stores';
 	import { derived } from 'svelte/store';
-	import { LogOut, UserRoundPen } from 'lucide-svelte';
+        import { LogOut, UserRound } from 'lucide-svelte';
 
 	const { session } = $props<{ session: Session | null }>();
 
@@ -66,8 +66,8 @@ const guestNavItems = [
 						href="/mypage"
 						title="마이페이지"
 					>
-						<UserRoundPen class="h-5 w-5" />
-					</a>
+                                                <UserRound class="h-5 w-5" />
+                                        </a>
 					<form method="post" action="/auth/signout" class="m-0">
 						<button
 							type="submit"
