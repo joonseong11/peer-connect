@@ -103,15 +103,14 @@ import type { ActionData, PageData } from './$types';
 
 			<label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
 				<span>직군 · 포지션</span>
-				<input
-					name="role"
-					type="text"
-					placeholder="예: Senior Backend Engineer · Platform Squad"
-					required
-					value={values.role}
-					autocomplete="organization-title"
-					class="w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
-				/>
+                                <input
+                                        name="role"
+                                        type="text"
+                                        placeholder="예: Senior Backend Engineer · Platform Squad"
+                                        value={values.role}
+                                        autocomplete="organization-title"
+                                        class="w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
+                                />
 				{#if fieldError('role')}
 					<span class="text-sm font-medium text-rose-500">{fieldError('role')}</span>
 				{/if}

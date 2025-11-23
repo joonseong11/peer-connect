@@ -107,22 +107,18 @@ export const actions: Actions = {
 			errors.full_name = '이름을 입력해주세요.';
 		}
 
-		if (!values.role) {
-			errors.role = '직군 및 포지션을 입력해주세요.';
-		}
-
-		if (Object.keys(errors).length > 0) {
-			return fail(400, {
-				success: false,
-				errors,
+                if (Object.keys(errors).length > 0) {
+                        return fail(400, {
+                                success: false,
+                                errors,
 				values
 			});
 		}
 
 		const payload: Record<string, unknown> = {
-			user_id: session.user.id,
-			full_name: values.full_name,
-			role: values.role,
+                        user_id: session.user.id,
+                        full_name: values.full_name,
+                        role: values.role || null,
 			career_history: values.career_history,
 			introduction: values.introduction,
 			contact_linkedin: values.contact_linkedin || null,
