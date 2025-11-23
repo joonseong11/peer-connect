@@ -17,13 +17,40 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(303, '/?authError=signin-required');
 	}
 
-	const {
-		data,
-		error
-	} = await locals.supabase
-		.from('profiles')
-		.select('user_id, full_name, role, introduction, updated_at, photo_url')
-		.order('updated_at', { ascending: false });
+        const { data: invitees, error: inviteLookupError } = await locals.supabase
+                .from('invite_redemptions')
+                .select('invitee_user_id')
+                .not('invitee_user_id', 'is', null);
+
+        if (inviteLookupError) {
+                console.error('Failed to load invite redemption data', inviteLookupError);
+                return {
+                        session,
+                        profiles: [],
+                        loadError: '초대 코드 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
+                };
+        }
+
+        const inviteeIds = (invitees ?? [])
+                .map((entry) => entry.invitee_user_id)
+                .filter((id): id is string => Boolean(id));
+
+        if (inviteeIds.length === 0) {
+                return {
+                        session,
+                        profiles: [],
+                        loadError: null
+                };
+        }
+
+        const {
+                data,
+                error
+        } = await locals.supabase
+                .from('profiles')
+                .select('user_id, full_name, role, introduction, updated_at, photo_url')
+                .in('user_id', inviteeIds)
+                .order('updated_at', { ascending: false });
 
 	if (error) {
 		console.error('Failed to load members', error);
