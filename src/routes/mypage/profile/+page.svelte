@@ -1,5 +1,5 @@
 <script lang="ts">
-        import { PencilLine, UserRoundCog } from 'lucide-svelte';
+        import { ImageUp, PencilLine, UserRoundCog } from 'lucide-svelte';
         import type { PageData } from './$types';
 
         	let { data } = $props<{ data: PageData }>();
@@ -100,6 +100,10 @@
                                 </div>
                                 <div class="flex flex-wrap items-center gap-3">
                                         <a class="btn btn-secondary" href="/mypage">마이페이지</a>
+                                        <a class="btn btn-secondary" href="/mypage/avatar">
+                                                <ImageUp class="h-4 w-4" />
+                                                <span>내 프로필 사진 수정하기</span>
+                                        </a>
                                         <a class="btn btn-primary" href="/profile">
                                                 <PencilLine class="h-4 w-4" />
                                                 <span>프로필 수정하기</span>
