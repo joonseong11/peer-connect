@@ -2,7 +2,7 @@
         import { PencilLine, UserRoundCog } from 'lucide-svelte';
         import type { PageData } from './$types';
 
-        const { data } = $props<{ data: PageData }>();
+        	let { data } = $props<{ data: PageData }>();
 
         const profile = $derived(data.profile);
         const endorsements = $derived(data.endorsements);
@@ -113,19 +113,7 @@
                 </section>
 
                 <section class="glass-panel space-y-6">
-                        <div class="grid gap-6 lg:grid-cols-[220px_1fr]">
-                                <div class="flex flex-col items-center gap-4 text-center lg:items-start lg:text-left">
-                                        <img
-                                                class="h-40 w-40 rounded-3xl border-4 border-slate-200/70 bg-slate-50 object-cover"
-                                                src={profile.photo_url ?? defaultAvatar}
-                                                alt={`${profile.full_name} 프로필 이미지`}
-                                        />
-                                        <p class="text-sm font-semibold text-slate-500">{profile.role || '직군 정보 미입력'}</p>
-                                        <a class="btn btn-secondary" href="/profile">
-                                                <UserRoundCog class="h-4 w-4" />
-                                                <span>프로필 설정 이동</span>
-                                        </a>
-                                </div>
+                        <div class="grid gap-6 lg:grid-cols-1">
                                 <div class="space-y-6">
                                         <section class="space-y-2">
                                                 <h2 class="text-xl font-semibold text-peer-navy">소개</h2>

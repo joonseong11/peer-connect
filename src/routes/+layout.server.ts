@@ -162,9 +162,9 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		throw redirect(303, '/invite');
 	}
 
-	if (!requireInvite && requiresProfileCompletion && !isProfilePage && !isAuthRoute) {
-		throw redirect(303, '/profile?onboarding=1');
-	}
+	// if (!requireInvite && requiresProfileCompletion && !isProfilePage && !isAuthRoute) {
+	// 	throw redirect(303, '/profile?onboarding=1');
+	// }
 
 	return {
 		session,

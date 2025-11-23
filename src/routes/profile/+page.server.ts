@@ -14,10 +14,7 @@ const PROFILE_FIELDS = [
 ] as const;
 
 type ProfileField = (typeof PROFILE_FIELDS)[number];
-type ProfileErrors = Partial<Record<ProfileField | 'avatar', string>>;
-
-const PROFILE_PHOTO_BUCKET = 'profile-photos';
-const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
+type ProfileErrors = Partial<Record<ProfileField, string>>;
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const session = await locals.getSession();
@@ -29,7 +26,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const emailColumnAvailable = await hasProfileEmailColumn(locals.supabase);
 
 	const baseColumns =
-		'full_name, role, career_history, introduction, contact_linkedin, contact_github, contact_email, updated_at, photo_url';
+		'full_name, role, career_history, introduction, contact_linkedin, contact_github, contact_email, updated_at';
 	const selectColumns = emailColumnAvailable ? `${baseColumns}, email` : baseColumns;
 
 	const {
@@ -69,7 +66,7 @@ export const actions: Actions = {
 
 		const { data: currentProfile } = await locals.supabase
 			.from('profiles')
-			.select('photo_url, profile_completed_at')
+			.select('profile_completed_at')
 			.eq('user_id', session.user.id)
 			.maybeSingle();
 
@@ -106,9 +103,6 @@ export const actions: Actions = {
 			errors.contact_email = '유효한 이메일 주소를 입력해주세요.';
 		}
 
-		let photoUrl = currentProfile?.photo_url ?? null;
-		const avatar = formData.get('avatar');
-
 		if (!values.full_name) {
 			errors.full_name = '이름을 입력해주세요.';
 		}
@@ -117,38 +111,11 @@ export const actions: Actions = {
 			errors.role = '직군 및 포지션을 입력해주세요.';
 		}
 
-		if (avatar instanceof File && avatar.size > 0) {
-			if (avatar.size > MAX_PHOTO_SIZE) {
-				errors.avatar = '이미지 용량은 5MB 이하만 업로드할 수 있습니다.';
-			} else if (!avatar.type.startsWith('image/')) {
-				errors.avatar = '이미지 파일만 업로드할 수 있습니다.';
-			} else {
-				const extension = avatar.name.split('.').pop()?.toLowerCase() ?? 'png';
-				const filePath = `${session.user.id}/${crypto.randomUUID()}.${extension}`;
-				const { error: uploadError } = await locals.supabase.storage
-					.from(PROFILE_PHOTO_BUCKET)
-					.upload(filePath, avatar, {
-						upsert: true,
-						contentType: avatar.type
-					});
-
-				if (uploadError) {
-					console.error('Failed to upload profile photo', uploadError);
-					errors.avatar = '프로필 이미지를 업로드하지 못했습니다. 잠시 후 다시 시도해주세요.';
-				} else {
-					const {
-						data: { publicUrl }
-					} = locals.supabase.storage.from(PROFILE_PHOTO_BUCKET).getPublicUrl(filePath);
-					photoUrl = publicUrl;
-				}
-			}
-		}
-
 		if (Object.keys(errors).length > 0) {
 			return fail(400, {
 				success: false,
 				errors,
-				values: { ...values, photo_url: photoUrl }
+				values
 			});
 		}
 
@@ -161,7 +128,6 @@ export const actions: Actions = {
 			contact_linkedin: values.contact_linkedin || null,
 			contact_github: values.contact_github || null,
 			contact_email: values.contact_email || null,
-			photo_url: photoUrl,
 			updated_at: new Date().toISOString()
 		};
 
@@ -192,7 +158,7 @@ export const actions: Actions = {
 		return {
 			success: true,
 			firstCompletion: isFirstCompletion,
-			values: { ...values, photo_url: photoUrl }
+			values
 		};
 	}
 };

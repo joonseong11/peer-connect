@@ -20,14 +20,11 @@ import type { ActionData, PageData } from './$types';
 		contact_email: profile?.contact_email ?? ''
 	};
 
-	const defaultAvatar = '/images/default-profile.svg';
-	let previewUrl = $state(profile?.photo_url ?? defaultAvatar);
-	let objectUrl: string | null = null;
+
 
 	const submitSucceeded = $derived(form?.success ?? false);
 	const values = $derived<Record<string, string>>((form?.values as Record<string, string>) ?? initialValues);
 	const fieldError = (field: keyof typeof initialValues) => form?.errors?.[field] ?? null;
-	const avatarError = $derived(form?.errors?.avatar ?? null);
 	let showProfileCompleteModal = $state(false);
         let handledForm: ProfileActionData | null = null;
         let profileSubmitting = $state(false);
@@ -57,101 +54,7 @@ import type { ActionData, PageData } from './$types';
                 profileSubmitting = true;
         };
 
-	const MAX_AVATAR_DIMENSION = 512;
-	const TARGET_MAX_SIZE = 140 * 1024;
 
-	const compressImage = async (file: File) => {
-		if (!browser || !file.type.startsWith('image/')) {
-			return file;
-		}
-
-		try {
-			const imageBitmap = await createImageBitmap(file);
-			const { width, height } = imageBitmap;
-			const scale = Math.min(1, MAX_AVATAR_DIMENSION / Math.max(width, height));
-			const targetWidth = Math.max(1, Math.round(width * scale));
-			const targetHeight = Math.max(1, Math.round(height * scale));
-
-			const canvas = document.createElement('canvas');
-			canvas.width = targetWidth;
-			canvas.height = targetHeight;
-			const context = canvas.getContext('2d');
-			if (!context) {
-				imageBitmap.close();
-				return file;
-			}
-
-			context.drawImage(imageBitmap, 0, 0, targetWidth, targetHeight);
-			imageBitmap.close();
-
-			const qualities = [0.82, 0.72, 0.62, 0.52];
-			let blob: Blob | null = null;
-			for (const quality of qualities) {
-				blob = await new Promise<Blob | null>((resolve) =>
-					canvas.toBlob((result) => resolve(result), 'image/jpeg', quality)
-				);
-				if (!blob) {
-					continue;
-				}
-				if (blob.size <= TARGET_MAX_SIZE || quality === qualities[qualities.length - 1]) {
-					break;
-				}
-			}
-
-			if (!blob || blob.size >= file.size) {
-				return file;
-			}
-
-			const normalizedName = file.name.replace(/\.[^/.]+$/, '') || 'avatar';
-			return new File([blob], `${normalizedName}.jpg`, {
-				type: 'image/jpeg',
-				lastModified: Date.now()
-			});
-		} catch (error) {
-			console.error('[profile] Failed to compress avatar', error);
-			return file;
-		}
-	};
-
-	const handleAvatarChange = async (event: Event) => {
-		const input = event.currentTarget as HTMLInputElement;
-		const file = input.files?.[0];
-		if (objectUrl) {
-			URL.revokeObjectURL(objectUrl);
-			objectUrl = null;
-		}
-		if (file) {
-			const processedFile = await compressImage(file);
-			if (processedFile !== file) {
-				const dataTransfer = new DataTransfer();
-				dataTransfer.items.add(processedFile);
-				input.files = dataTransfer.files;
-			}
-			objectUrl = URL.createObjectURL(input.files?.[0] ?? file);
-			previewUrl = objectUrl;
-		} else {
-			previewUrl = profile?.photo_url ?? defaultAvatar;
-		}
-	};
-
-	$effect(() => {
-		const photoFromForm = (form?.values as { photo_url?: string } | undefined)?.photo_url;
-		if (typeof photoFromForm === 'string' && photoFromForm.length > 0 && !photoFromForm.startsWith('blob:')) {
-			if (objectUrl) {
-				URL.revokeObjectURL(objectUrl);
-				objectUrl = null;
-			}
-			previewUrl = photoFromForm;
-		} else if (!form) {
-			previewUrl = profile?.photo_url ?? defaultAvatar;
-		}
-	});
-
-	onDestroy(() => {
-		if (objectUrl) {
-			URL.revokeObjectURL(objectUrl);
-		}
-	});
 </script>
 
 <svelte:head>
@@ -179,25 +82,7 @@ import type { ActionData, PageData } from './$types';
                 enctype="multipart/form-data"
                 onsubmit={handleProfileSubmit}
         >
-		<div class="flex flex-wrap items-center gap-5">
-			<img class="h-32 w-32 rounded-3xl border-4 border-slate-200/70 bg-slate-50 object-cover" src={previewUrl} alt="내 프로필 사진 미리보기" />
-			<div class="space-y-2 text-sm font-semibold text-slate-700">
-				<label class="flex flex-col gap-1">
-					<span>프로필 사진 (선택)</span>
-					<input
-						name="avatar"
-						type="file"
-						accept="image/*"
-						onchange={handleAvatarChange}
-						class="w-full max-w-xs rounded-2xl border border-slate-300/60 bg-white px-3 py-2 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-peer-indigo/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-peer-indigo focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
-					/>
-				</label>
-				<p class="text-xs font-normal text-slate-500">JPG, PNG 등 이미지 파일 · 최대 5MB</p>
-				{#if avatarError}
-					<p class="text-sm font-medium text-rose-500" role="alert">{avatarError}</p>
-				{/if}
-			</div>
-		</div>
+
 
 		<fieldset class="grid gap-5 sm:grid-cols-2">
 			<label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
