@@ -114,7 +114,6 @@ export const actions: Actions = {
     }
 
     const payload: Record<string, unknown> = {
-      user_id: session.user.id,
       full_name: values.full_name,
       role: values.role || null,
       career_history: values.career_history,
@@ -135,15 +134,22 @@ export const actions: Actions = {
       // Note: We continue even if this fails, as the profile update is the primary goal.
     }
 
-    const isFirstCompletion =
-      !currentProfile?.profile_completed_at || currentProfile.profile_completed_at.length === 0;
+    const isFirstCompletion = !currentProfile?.profile_completed_at;
+
+    const insertPayload: Record<string, unknown> = {
+      ...payload,
+      user_id: session.user.id
+    };
 
     if (isFirstCompletion) {
       payload.profile_completed_at = new Date().toISOString();
+      insertPayload.profile_completed_at = payload.profile_completed_at;
     }
 
     if (emailColumnAvailable) {
-      payload.email = normalizeEmail(session.user.email ?? null);
+      const normalizedEmail = normalizeEmail(session.user.email ?? null);
+      payload.email = normalizedEmail;
+      insertPayload.email = normalizedEmail;
     }
 
     let error: PostgrestError | null = null;
