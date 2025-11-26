@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import type { PostgrestError } from '@supabase/supabase-js';
 import type { Actions, PageServerLoad } from './$types';
 import { hasProfileEmailColumn } from '$lib/server/profileEmailColumn';
 import { normalizeEmail } from '$lib/utils/normalizeEmail';
@@ -63,7 +64,7 @@ export const actions: Actions = {
 
     const { data: currentProfile } = await locals.supabase
       .from('profiles')
-      .select('profile_completed_at')
+      .select('id, profile_completed_at')
       .eq('user_id', session.user.id)
       .maybeSingle();
 
@@ -113,7 +114,6 @@ export const actions: Actions = {
     }
 
     const payload: Record<string, unknown> = {
-      user_id: session.user.id,
       full_name: values.full_name,
       role: values.role || null,
       career_history: values.career_history,
@@ -134,23 +134,40 @@ export const actions: Actions = {
       // Note: We continue even if this fails, as the profile update is the primary goal.
     }
 
-    const isFirstCompletion =
-      !currentProfile?.profile_completed_at || currentProfile.profile_completed_at.length === 0;
+    const isFirstCompletion = !currentProfile?.profile_completed_at;
+
+    const insertPayload: Record<string, unknown> = {
+      ...payload,
+      user_id: session.user.id
+    };
 
     if (isFirstCompletion) {
       payload.profile_completed_at = new Date().toISOString();
+      insertPayload.profile_completed_at = payload.profile_completed_at;
     }
 
     if (emailColumnAvailable) {
-      payload.email = normalizeEmail(session.user.email ?? null);
+      const normalizedEmail = normalizeEmail(session.user.email ?? null);
+      payload.email = normalizedEmail;
+      insertPayload.email = normalizedEmail;
     }
 
-    const { error } = await locals.supabase.from('profiles').upsert(payload, {
-      onConflict: 'user_id'
-    });
+    let error: PostgrestError | null = null;
+
+    if (currentProfile) {
+      const { error: updateError } = await locals.supabase
+        .from('profiles')
+        .update(payload)
+        .eq('user_id', session.user.id);
+
+      error = updateError;
+    } else {
+      const { error: insertError } = await locals.supabase.from('profiles').insert(insertPayload);
+      error = insertError;
+    }
 
     if (error) {
-      console.error('Failed to upsert profile', error);
+      console.error('Failed to save profile', error);
       return fail(500, {
         success: false,
         serverMessage: '프로필 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
