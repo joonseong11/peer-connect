@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { onDestroy } from 'svelte';
-	import { createBrowserClient } from '@supabase/ssr';
-	import type { Session, SupabaseClient } from '@supabase/supabase-js';
-	import { getSupabaseConfig } from '$lib/supabase/config';
+        import { browser } from '$app/environment';
+        import { onDestroy } from 'svelte';
+        import { createBrowserClient } from '@supabase/ssr';
+        import type { Session, SupabaseClient } from '@supabase/supabase-js';
+        import MetaTags from '$lib/components/MetaTags.svelte';
+        import { getSupabaseConfig } from '$lib/supabase/config';
 
 	const featureHighlights = [
 		{
@@ -80,9 +81,12 @@
 	let supabase: SupabaseClient | null = null;
 const invitesEnabled = $derived(data.invitesEnabled ?? false);
 const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
-const inviteePrompt = $derived(data.inviteePrompt ?? null);
-let acknowledgeSubmittingIntent = $state<string | null>(null);
-let lastPromptId = $state<string | null>(null);
+        const inviteePrompt = $derived(data.inviteePrompt ?? null);
+        let acknowledgeSubmittingIntent = $state<string | null>(null);
+        let lastPromptId = $state<string | null>(null);
+
+        const metaDescription =
+                '초대 기반 프라이빗 개발자 네트워크, Peer Connect에서 깊이 있는 동료와 함께 성장하세요.';
 
 $effect(() => {
         const currentPromptId = inviteePrompt?.redemptionId ?? null;
@@ -159,13 +163,12 @@ $effect(() => {
         };
 </script>
 
-<svelte:head>
-	<title>Peer Connect · 함께 성장하는 개발자 커뮤니티</title>
-	<meta
-		name="description"
-		content="초대 기반 프라이빗 개발자 네트워크, Peer Connect에서 깊이 있는 동료와 함께 성장하세요."
-	/>
-</svelte:head>
+<MetaTags
+        title="Peer Connect · 함께 성장하는 개발자 커뮤니티"
+        description={metaDescription}
+        path="/"
+        type="website"
+/>
 
 <main class="mx-auto flex w-full max-w-5xl flex-col gap-14 px-4 pb-20 pt-16 sm:px-8 lg:gap-16">
 	<section id="intro" class="glass-panel grid gap-10 md:grid-cols-2 md:items-center lg:p-12">

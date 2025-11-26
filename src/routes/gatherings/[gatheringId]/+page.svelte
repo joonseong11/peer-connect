@@ -1,12 +1,17 @@
 <script lang="ts">
-	import type { ActionData, PageData } from './$types';
+        import MetaTags from '$lib/components/MetaTags.svelte';
+        import type { ActionData, PageData } from './$types';
 
 	type GatheringActionData = ActionData & { parentCommentId?: string | null };
 
 	const { data, form } = $props<{ data: PageData; form: GatheringActionData }>();
 
-	const { session, post, comments, loadError } = data;
-	const isAuthor = $derived(session?.user.id === post.author_id);
+        const { session, post, comments, loadError } = data;
+        const isAuthor = $derived(session?.user.id === post.author_id);
+
+        const metaDescription =
+                post.content.length > 160 ? `${post.content.slice(0, 160)}…` : post.content;
+        const metaPath = `/gatherings/${post.id}`;
 
 	let editingPost = $state(false);
 	let postDraft = $state({
@@ -147,6 +152,13 @@
 			minute: '2-digit'
 		});
 </script>
+
+<MetaTags
+        title={`${post.title} · 모임 라운지 · Peer Connect`}
+        description={metaDescription}
+        path={metaPath}
+        type="article"
+/>
 
 <svelte:head>
 	<title>{post.title} · 모임 라운지</title>

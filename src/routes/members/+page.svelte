@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { PageData } from './$types';
+        import MetaTags from '$lib/components/MetaTags.svelte';
+        import type { PageData } from './$types';
 
 	const { data } = $props<{ data: PageData }>();
 
@@ -10,10 +11,12 @@
 		content.length > maxLength ? `${content.slice(0, maxLength)}…` : content;
 </script>
 
-<svelte:head>
-	<title>동료 프로필 둘러보기 · Peer Connect</title>
-	<meta name="description" content="Peer Connect 멤버들의 프로필을 살펴보고 영감을 얻어보세요." />
-</svelte:head>
+<MetaTags
+        title="동료 프로필 둘러보기 · Peer Connect"
+        description="Peer Connect 멤버들의 프로필을 살펴보고 영감을 얻어보세요."
+        path="/members"
+        type="website"
+/>
 
 <main class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-5 pb-16 pt-14 sm:px-8">
 	<section class="glass-panel space-y-4">

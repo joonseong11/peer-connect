@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { onDestroy } from 'svelte';
-	import type { ActionData, PageData } from './$types';
+        import MetaTags from '$lib/components/MetaTags.svelte';
+        import type { ActionData, PageData } from './$types';
 
 	const { data, form } = $props<{ data: PageData; form: ActionData }>();
 	const { profile, loadError } = data;
@@ -104,9 +105,12 @@
 	});
 </script>
 
-<svelte:head>
-	<title>프로필 사진 변경 · Peer Connect</title>
-</svelte:head>
+<MetaTags
+        title="프로필 사진 변경 · Peer Connect"
+        description="프로필 사진을 업로드하고 교체할 수 있습니다."
+        path="/mypage/avatar"
+        type="website"
+/>
 
 <main class="mx-auto flex w-full max-w-xl flex-col gap-6 px-5 pb-16 pt-14 sm:px-8">
 	<section class="glass-panel space-y-4 text-center">

@@ -1,6 +1,7 @@
 <script lang="ts">
 import { browser } from '$app/environment';
 import { onDestroy } from 'svelte';
+import MetaTags from '$lib/components/MetaTags.svelte';
 import type { ActionData, PageData } from './$types';
 
 	type ProfileActionData = ActionData & { firstCompletion?: boolean };
@@ -57,10 +58,12 @@ import type { ActionData, PageData } from './$types';
 
 </script>
 
-<svelte:head>
-        <title>프로필 설정 · Peer Connect</title>
-        <meta name="description" content="Peer Connect에서 내 프로필을 설정하고 정보를 최신 상태로 유지하세요." />
-</svelte:head>
+<MetaTags
+        title="프로필 설정 · Peer Connect"
+        description="나의 역할과 경험을 정리하고 동료에게 신뢰받는 프로필을 완성하세요."
+        path="/profile"
+        type="website"
+/>
 
 <main class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-5 pb-16 pt-14 sm:px-8">
         <section class="glass-panel space-y-4">

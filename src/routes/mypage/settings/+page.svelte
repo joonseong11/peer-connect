@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { ActionData, PageData } from './$types';
+        import MetaTags from '$lib/components/MetaTags.svelte';
+        import type { ActionData, PageData } from './$types';
 
 	const { data, form } = $props<{ data: PageData; form: ActionData }>();
 
@@ -48,10 +49,12 @@
         };
 </script>
 
-<svelte:head>
-        <title>설정하기 · Peer Connect</title>
-        <meta name="description" content="알림 설정과 회원 탈퇴를 관리할 수 있는 Peer Connect 설정 페이지입니다." />
-</svelte:head>
+<MetaTags
+        title="설정하기 · Peer Connect"
+        description="알림 설정과 회원 탈퇴를 관리할 수 있는 Peer Connect 설정 페이지입니다."
+        path="/mypage/settings"
+        type="website"
+/>
 
 <main class="mx-auto flex w-full max-w-4xl flex-col gap-8 px-5 pb-16 pt-14 sm:px-8">
         <section class="glass-panel space-y-4">
