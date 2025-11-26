@@ -1,5 +1,6 @@
 <script lang="ts">
         import { UserRound, Sparkles, Settings2 } from 'lucide-svelte';
+        import MetaTags from '$lib/components/MetaTags.svelte';
         import type { PageData } from './$types';
 
         const { data } = $props<{ data: PageData }>();
@@ -10,10 +11,12 @@
         const defaultAvatar = '/images/default-profile.svg';
 </script>
 
-<svelte:head>
-        <title>마이페이지 · Peer Connect</title>
-        <meta name="description" content="프로필, 초대, 설정을 모아볼 수 있는 마이페이지 허브입니다." />
-</svelte:head>
+<MetaTags
+        title="마이페이지 · Peer Connect"
+        description="프로필, 초대, 설정을 모아볼 수 있는 마이페이지 허브입니다."
+        path="/mypage"
+        type="website"
+/>
 
 <main class="mx-auto flex w-full max-w-5xl flex-col gap-10 px-5 pb-16 pt-14 sm:px-8">
         <header class="glass-panel space-y-4">

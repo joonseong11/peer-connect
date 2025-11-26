@@ -1,5 +1,6 @@
 <script lang="ts">
         import { ImageUp, PencilLine, UserRoundCog } from 'lucide-svelte';
+        import MetaTags from '$lib/components/MetaTags.svelte';
         import type { PageData } from './$types';
 
         	let { data } = $props<{ data: PageData }>();
@@ -55,10 +56,12 @@
         });
 </script>
 
-<svelte:head>
-        <title>내 프로필 보기 · Peer Connect</title>
-        <meta name="description" content="나의 프로필과 동료 추천서를 모아보세요." />
-</svelte:head>
+<MetaTags
+        title="내 프로필 보기 · Peer Connect"
+        description="나의 프로필과 동료 추천서를 모아보세요."
+        path="/mypage/profile"
+        type="website"
+/>
 
 {#if !profile}
         <main class="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 px-5 pb-16 pt-14 text-center sm:px-8">

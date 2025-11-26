@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { ActionData, PageData } from './$types';
+        import MetaTags from '$lib/components/MetaTags.svelte';
+        import type { ActionData, PageData } from './$types';
 
         const { data, form } = $props<{ data: PageData; form: ActionData }>();
 
@@ -41,10 +42,12 @@
 		});
 </script>
 
-<svelte:head>
-	<title>모임 라운지 · Peer Connect</title>
-	<meta name="description" content="Peer Connect 멤버들과 함께하는 다양한 모임을 만들고 참여해보세요." />
-</svelte:head>
+<MetaTags
+        title="모임 라운지 · Peer Connect"
+        description="Peer Connect 멤버들과 함께하는 다양한 모임을 만들고 참여해보세요."
+        path="/gatherings"
+        type="website"
+/>
 
 <main class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-5 pb-16 pt-14 sm:px-8">
 	<section class="glass-panel space-y-4">

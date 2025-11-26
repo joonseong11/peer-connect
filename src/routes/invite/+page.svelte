@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { ActionData, PageData } from './$types';
+        import MetaTags from '$lib/components/MetaTags.svelte';
+        import type { ActionData, PageData } from './$types';
 
 	const { data, form } = $props<{ data: PageData; form: ActionData }>();
 
@@ -133,9 +134,12 @@
 	};
 </script>
 
-<svelte:head>
-	<title>초대 관리 · Peer Connect</title>
-</svelte:head>
+<MetaTags
+        title="초대 관리 · Peer Connect"
+        description="신뢰하는 동료에게 Peer Connect 초대장을 발급하고, 받은 초대 코드도 한 곳에서 관리하세요."
+        path="/invite"
+        type="website"
+/>
 
 <main class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-5 pb-16 pt-14 sm:px-8">
 	<section class="glass-panel space-y-4">

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { ActionData, PageData } from './$types';
+        import MetaTags from '$lib/components/MetaTags.svelte';
+        import type { ActionData, PageData } from './$types';
 
         const { data, form } = $props<{ data: PageData; form: ActionData }>();
 
@@ -9,11 +10,33 @@
         const statusMessage = $derived(data.statusMessage);
         const loadError = $derived(data.loadError);
         const session = $derived(data.session);
-	const defaultAvatar = '/images/default-profile.svg';
-	const values = $derived<Record<string, string>>(form?.values ?? { content: '' });
-	const contentError = $derived(form?.errors?.content ?? null);
+        const defaultAvatar = '/images/default-profile.svg';
+        const values = $derived<Record<string, string>>(form?.values ?? { content: '' });
+        const contentError = $derived(form?.errors?.content ?? null);
         const serverMessage = $derived(form?.serverMessage ?? null);
         const deleteError = $derived(form?.deleteError ?? null);
+
+        const metaTitle = $derived(
+                profile ? `${profile.full_name} · Peer Connect` : '동료 프로필 · Peer Connect'
+        );
+
+        const truncate = (value: string, limit = 140) =>
+                value.length > limit ? `${value.slice(0, limit)}…` : value;
+
+        const metaDescription = $derived.by<string>(() => {
+                if (profile?.introduction) {
+                        return truncate(profile.introduction, 160);
+                }
+
+                if (profile?.role) {
+                        return `${profile.full_name}님의 역할과 경험을 확인하세요. ${profile.role}`;
+                }
+
+                return 'Peer Connect 멤버 프로필을 확인하고 함께 성장할 동료를 찾아보세요.';
+        });
+
+        const metaImage = $derived(profile?.photo_url ?? '/images/og-default.svg');
+        const metaPath = $derived(profile ? `/members/${profile.user_id}` : undefined);
 
         let handledForm: ActionData | null = null;
         let endorseSubmitting = $state(false);
@@ -81,9 +104,13 @@
         });
 </script>
 
-<svelte:head>
-	<title>{profile ? `${profile.full_name} · Peer Connect` : '동료 프로필'}</title>
-</svelte:head>
+<MetaTags
+        title={metaTitle}
+        description={metaDescription}
+        image={metaImage}
+        path={metaPath}
+        type="article"
+/>
 
 {#if !profile}
 	<main class="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 px-5 pb-16 pt-14 text-center sm:px-8">

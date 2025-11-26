@@ -1,6 +1,14 @@
-<script>
-	import { fade } from 'svelte/transition';
+<script lang="ts">
+        import MetaTags from '$lib/components/MetaTags.svelte';
+        import { fade } from 'svelte/transition';
 </script>
+
+<MetaTags
+        title="개인정보처리방침 · Peer Connect"
+        description="Peer Connect 서비스의 개인정보 처리방침을 확인하세요."
+        path="/privacy"
+        type="article"
+/>
 
 <div class="mx-auto max-w-3xl px-6 py-12" in:fade={{ duration: 300 }}>
 	<h1 class="mb-8 text-3xl font-bold text-slate-900">개인정보처리방침</h1>
