@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { enhance } from '$app/forms';
   import { onDestroy } from 'svelte';
   import MetaTags from '$lib/components/MetaTags.svelte';
   import type { ActionData, PageData } from './$types';
@@ -46,14 +47,13 @@
 
     if (form !== handledForm) {
       handledForm = form;
-      profileSubmitting = false;
+      // profileSubmitting is handled by enhance now, but we ensure it's false here too just in case
+      if (form) {
+        profileSubmitting = false;
+      }
       showProfileCompleteModal = Boolean(form.success && form.firstCompletion);
     }
   });
-
-  const handleProfileSubmit = () => {
-    profileSubmitting = true;
-  };
 </script>
 
 <MetaTags
@@ -83,7 +83,13 @@
     method="post"
     class="glass-panel space-y-6"
     enctype="multipart/form-data"
-    onsubmit={handleProfileSubmit}
+    use:enhance={() => {
+      profileSubmitting = true;
+      return async ({ update }) => {
+        await update();
+        profileSubmitting = false;
+      };
+    }}
   >
     <fieldset class="grid gap-5 sm:grid-cols-2">
       <label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
