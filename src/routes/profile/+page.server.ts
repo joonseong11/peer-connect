@@ -124,6 +124,16 @@ export const actions: Actions = {
       updated_at: new Date().toISOString()
     };
 
+    // Sync full_name to Auth User Metadata
+    const { error: updateUserError } = await locals.supabase.auth.updateUser({
+      data: { full_name: values.full_name }
+    });
+
+    if (updateUserError) {
+      console.error('Failed to update auth user metadata', updateUserError);
+      // Note: We continue even if this fails, as the profile update is the primary goal.
+    }
+
     const isFirstCompletion =
       !currentProfile?.profile_completed_at || currentProfile.profile_completed_at.length === 0;
 
