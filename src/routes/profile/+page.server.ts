@@ -162,7 +162,7 @@ export const actions: Actions = {
 
       error = updateError;
     } else {
-      const { error: insertError } = await locals.supabase.from('profiles').insert(payload);
+      const { error: insertError } = await locals.supabase.from('profiles').insert(insertPayload);
       error = insertError;
     }
 
