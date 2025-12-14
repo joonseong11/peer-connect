@@ -64,7 +64,7 @@ export const actions: Actions = {
 
     const { data: currentProfile } = await locals.supabase
       .from('profiles')
-      .select('id, profile_completed_at')
+      .select('user_id, profile_completed_at')
       .eq('user_id', session.user.id)
       .maybeSingle();
 
