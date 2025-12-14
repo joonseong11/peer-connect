@@ -23,13 +23,32 @@
   };
 
   const submitSucceeded = $derived(form?.success ?? false);
-  const values = $derived<Record<string, string>>(
-    (form?.values as Record<string, string>) ?? initialValues
-  );
   const fieldError = (field: keyof typeof initialValues) => form?.errors?.[field] ?? null;
   let showProfileCompleteModal = $state(false);
   let handledForm: ProfileActionData | null = null;
   let profileSubmitting = $state(false);
+
+  // Local state for form fields with two-way binding
+  let full_name = $state(initialValues.full_name);
+  let role = $state(initialValues.role);
+  let career_history = $state(initialValues.career_history);
+  let introduction = $state(initialValues.introduction);
+  let contact_linkedin = $state(initialValues.contact_linkedin);
+  let contact_github = $state(initialValues.contact_github);
+  let contact_email = $state(initialValues.contact_email);
+
+  // Update local state when form values change (e.g., after validation errors)
+  $effect(() => {
+    if (form?.values) {
+      full_name = form.values.full_name ?? initialValues.full_name;
+      role = form.values.role ?? initialValues.role;
+      career_history = form.values.career_history ?? initialValues.career_history;
+      introduction = form.values.introduction ?? initialValues.introduction;
+      contact_linkedin = form.values.contact_linkedin ?? initialValues.contact_linkedin;
+      contact_github = form.values.contact_github ?? initialValues.contact_github;
+      contact_email = form.values.contact_email ?? initialValues.contact_email;
+    }
+  });
 
   $effect(() => {
     if (!invite?.inviter_user_id) {
@@ -99,7 +118,7 @@
           type="text"
           placeholder="예: 김소연"
           required
-          value={values.full_name}
+          bind:value={full_name}
           autocomplete="name"
           class="w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
         />
@@ -114,7 +133,7 @@
           name="role"
           type="text"
           placeholder="예: Senior Backend Engineer · Platform Squad"
-          value={values.role}
+          bind:value={role}
           autocomplete="organization-title"
           class="w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
         />
@@ -131,9 +150,9 @@
           placeholder={`회사 · 팀 · 기간을 줄바꿈으로 정리해주세요.
 예) 토스 · Platform Squad (2022-현재)
 네이버 · Search Infra (2018-2022)`}
+          bind:value={career_history}
           class="min-h-[160px] w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
-          >{values.career_history}</textarea
-        >
+        ></textarea>
       </label>
 
       <label class="sm:col-span-2 flex flex-col gap-2 text-sm font-semibold text-slate-700">
@@ -142,9 +161,9 @@
           name="introduction"
           rows={6}
           placeholder="어떤 문제를 좋아하고, 어떻게 팀과 함께 성장했는지 자유롭게 작성해주세요."
+          bind:value={introduction}
           class="min-h-[180px] w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
-          >{values.introduction}</textarea
-        >
+        ></textarea>
       </label>
 
       <div class="sm:col-span-2 space-y-3">
@@ -158,7 +177,7 @@
               name="contact_linkedin"
               type="url"
               placeholder="https://www.linkedin.com/in/username"
-              value={values.contact_linkedin}
+              bind:value={contact_linkedin}
               class="w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
             />
             {#if fieldError('contact_linkedin')}
@@ -173,7 +192,7 @@
               name="contact_github"
               type="url"
               placeholder="https://github.com/username"
-              value={values.contact_github}
+              bind:value={contact_github}
               class="w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
             />
             {#if fieldError('contact_github')}
@@ -187,7 +206,7 @@
               name="contact_email"
               type="email"
               placeholder="peerconnect@example.com"
-              value={values.contact_email}
+              bind:value={contact_email}
               class="w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
             />
             {#if fieldError('contact_email')}
