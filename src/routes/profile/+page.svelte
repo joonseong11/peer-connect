@@ -112,7 +112,7 @@
   >
     <fieldset class="grid gap-5 sm:grid-cols-2">
       <label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-        <span>이름</span>
+        <span>이름 <span class="text-rose-500">*</span></span>
         <input
           name="full_name"
           type="text"
