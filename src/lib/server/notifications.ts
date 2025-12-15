@@ -55,6 +55,102 @@ const notificationFooterHtml = (manageUrl: string) =>
 const notificationFooterText = (manageUrl: string) =>
   `알림 수신을 중단하려면 다음 링크에서 설정을 변경하세요: ${manageUrl}`;
 
+type GatheringDigestInput = {
+  recipients: Array<{ email: string; name?: string | null }>;
+  posts: Array<{
+    id: string;
+    title: string;
+    authorName: string;
+    content: string;
+    created_at: string;
+  }>;
+};
+
+export const notifyGatheringDigest = async (input: GatheringDigestInput) => {
+  if (input.recipients.length === 0 || input.posts.length === 0) {
+    return { ok: true, skipped: true };
+  }
+
+  const appUrl = getAppUrl();
+  const subject =
+    input.posts.length === 1
+      ? 'PEER CONNECT에서 새로운 모임이 공유되었습니다.'
+      : `PEER CONNECT에서 ${input.posts.length}개의 새로운 모임이 공유되었습니다.`;
+  const manageUrl = buildNotificationSettingsUrl(appUrl, 'gathering-digest');
+
+  const postsHtml = input.posts
+    .map((post) => {
+      const postUrl = `${appUrl}/gatherings/${post.id}`;
+      const excerpt = createExcerpt(post.content, 180);
+      const date = new Date(post.created_at).toLocaleDateString('ko-KR', {
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      return `
+        <div style="margin-bottom: 32px; padding: 20px; background: #f8fafc; border-radius: 16px;">
+          <p style="margin: 0 0 8px; font-size: 13px; color: #64748b;">${date} · ${post.authorName}</p>
+          <h3 style="margin: 0 0 12px; font-size: 18px; font-weight: 600; color: #0f172a;">${post.title}</h3>
+          <p style="margin: 0 0 16px; line-height: 1.6; color: #475569;">${excerpt}</p>
+          <a href="${postUrl}" style="display:inline-block;padding:10px 18px;border-radius:999px;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;">자세히 보기</a>
+        </div>
+      `;
+    })
+    .join('');
+
+  const html = `
+    <h2 style="margin: 0 0 24px; font-size: 22px; font-weight: 700; color: #0f172a;">
+      오늘의 모임 ${input.posts.length}건
+    </h2>
+    <p style="margin: 0 0 32px; line-height: 1.6; color: #475569;">
+      어제부터 오늘까지 새롭게 공유된 모임을 확인해보세요.
+    </p>
+    ${postsHtml}
+    ${notificationFooterHtml(manageUrl)}
+  `.trim();
+
+  const postsText = input.posts
+    .map((post) => {
+      const postUrl = `${appUrl}/gatherings/${post.id}`;
+      const excerpt = createExcerpt(post.content, 180);
+      const date = new Date(post.created_at).toLocaleDateString('ko-KR', {
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      return `
+${date} · ${post.authorName}
+제목: ${post.title}
+${excerpt}
+자세히 보기: ${postUrl}
+---
+      `.trim();
+    })
+    .join('\n\n');
+
+  const text = `
+오늘의 모임 ${input.posts.length}건
+
+어제부터 오늘까지 새롭게 공유된 모임을 확인해보세요.
+
+${postsText}
+
+${notificationFooterText(manageUrl)}
+  `.trim();
+
+  return sendEmail({
+    to: input.recipients,
+    subject,
+    html,
+    text,
+    listUnsubscribe: { url: manageUrl }
+  });
+};
+
 export const notifyMeetingCreated = async (input: MeetingAnnouncementInput) => {
   if (input.recipients.length === 0) {
     return { ok: true, skipped: true };

@@ -114,6 +114,7 @@ create table if not exists public.gatherings (
   author_id uuid not null references public.profiles (user_id) on delete cascade,
   title text not null,
   content text not null,
+  email_sent boolean not null default false,
   created_at timestamptz default timezone('utc'::text, now()),
   updated_at timestamptz default timezone('utc'::text, now())
 );
@@ -148,7 +149,62 @@ create policy "Members manage their gathering comments"
 on public.gathering_comments for all
 using (auth.uid() = author_id)
 with check (auth.uid() = author_id);
+
+-- Add index for efficient daily digest queries
+create index if not exists idx_gatherings_email_sent
+on public.gatherings(email_sent, created_at)
+where email_sent = false;
 ```
+
+**일일 다이제스트 알림 설정 (Daily Digest)**
+
+모임 라운지 글은 하루에 한 번 다이제스트 이메일로 모아서 발송됩니다. 이는 Resend Free 요금제의 하루 100개 메일 제한을 회피하기 위한 방법입니다.
+
+다이제스트를 발송하려면 매일 아침 7시(KST)에 다음 API 엔드포인트를 호출하도록 cron job을 설정하세요:
+
+```bash
+# GET or POST request
+curl -X POST https://your-domain.com/api/cron/gathering-digest
+```
+
+#### GitHub Actions를 사용한 스케줄링 예시
+
+`.github/workflows/gathering-digest.yml` 파일을 생성하세요:
+
+```yaml
+name: Send Gathering Digest
+
+on:
+  schedule:
+    # 매일 UTC 22:00 = KST 07:00 (다음날)
+    - cron: '0 22 * * *'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call digest endpoint
+        run: |
+          curl -X POST https://your-domain.com/api/cron/gathering-digest
+```
+
+#### Vercel Cron 사용 (Vercel 배포 시)
+
+`vercel.json` 파일에 다음을 추가하세요:
+
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/gathering-digest",
+      "schedule": "0 22 * * *"
+    }
+  ]
+}
+```
+
+> **Note:** Vercel Cron은 Pro 플랜 이상에서만 사용 가능합니다. Hobby 플랜에서는 GitHub Actions 또는 외부 cron 서비스(cron-job.org 등)를 사용하세요.
 
 ### Email Notifications
 
