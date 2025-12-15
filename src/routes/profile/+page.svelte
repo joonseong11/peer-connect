@@ -128,11 +128,12 @@
       </label>
 
       <label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-        <span>직군 · 포지션</span>
+        <span>직군 · 포지션 <span class="text-rose-500">*</span></span>
         <input
           name="role"
           type="text"
           placeholder="예: Senior Backend Engineer · Platform Squad"
+          required
           bind:value={role}
           autocomplete="organization-title"
           class="w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
@@ -156,14 +157,18 @@
       </label>
 
       <label class="sm:col-span-2 flex flex-col gap-2 text-sm font-semibold text-slate-700">
-        <span>소개</span>
+        <span>소개 <span class="text-rose-500">*</span></span>
         <textarea
           name="introduction"
           rows={6}
           placeholder="어떤 문제를 좋아하고, 어떻게 팀과 함께 성장했는지 자유롭게 작성해주세요."
+          required
           bind:value={introduction}
           class="min-h-[180px] w-full rounded-2xl border border-slate-300/60 bg-slate-50/90 px-4 py-3 text-sm text-peer-navy shadow-sm transition focus:border-peer-indigo focus:bg-white focus:outline-none focus:ring-2 focus:ring-peer-indigo/30"
         ></textarea>
+        {#if fieldError('introduction')}
+          <span class="text-sm font-medium text-rose-500">{fieldError('introduction')}</span>
+        {/if}
       </label>
 
       <div class="sm:col-span-2 space-y-3">

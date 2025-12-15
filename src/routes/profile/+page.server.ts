@@ -89,6 +89,20 @@ export const actions: Actions = {
       }
     };
 
+    // Required field validation
+    if (!values.full_name) {
+      errors.full_name = '이름을 입력해주세요.';
+    }
+
+    if (!values.role) {
+      errors.role = '직군 또는 포지션을 입력해주세요.';
+    }
+
+    if (!values.introduction) {
+      errors.introduction = '소개를 입력해주세요.';
+    }
+
+    // Optional field format validation
     if (values.contact_linkedin && !isValidUrl(values.contact_linkedin)) {
       errors.contact_linkedin = '유효한 URL을 입력해주세요.';
     }
@@ -99,10 +113,6 @@ export const actions: Actions = {
 
     if (values.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.contact_email)) {
       errors.contact_email = '유효한 이메일 주소를 입력해주세요.';
-    }
-
-    if (!values.full_name) {
-      errors.full_name = '이름을 입력해주세요.';
     }
 
     if (Object.keys(errors).length > 0) {
