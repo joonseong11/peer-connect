@@ -117,7 +117,7 @@ export const actions: Actions = {
       } else {
         const { data: recipients, error: recipientsError } = await adminClient
           .from('profiles')
-          .select('user_id, email, full_name')
+          .select('user_id, email, full_name, notify_gatherings')
           .not('email', 'is', null);
 
         if (recipientsError) {
@@ -129,7 +129,8 @@ export const actions: Actions = {
                 (recipient) =>
                   recipient.email &&
                   recipient.email.length > 0 &&
-                  recipient.user_id !== session.user.id
+                  recipient.user_id !== session.user.id &&
+                  recipient.notify_gatherings !== false
               )
               .map((recipient) => ({
                 email: recipient.email as string,
@@ -137,15 +138,27 @@ export const actions: Actions = {
               })) ?? [];
 
           if (filteredRecipients.length > 0) {
-            await notifyMeetingCreated({
-              recipients: filteredRecipients,
-              post: {
-                id: inserted.id,
-                title,
-                authorName,
-                content
+            // Send emails individually to avoid rate limiting
+            for (const recipient of filteredRecipients) {
+              try {
+                await notifyMeetingCreated({
+                  recipients: [recipient],
+                  post: {
+                    id: inserted.id,
+                    title,
+                    authorName,
+                    content
+                  }
+                });
+                // Add a small delay between emails to avoid rate limiting
+                await new Promise((resolve) => setTimeout(resolve, 100));
+              } catch (error) {
+                console.error(
+                  `[gatherings] Failed to send notification to ${recipient.email}`,
+                  error
+                );
               }
-            });
+            }
           }
         }
       }
