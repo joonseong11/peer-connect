@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { ImageUp, PencilLine, UserRoundCog } from 'lucide-svelte';
+  import { ImageUp, PencilLine, UserRoundCog, Code, Copy, Check, X } from 'lucide-svelte';
   import MetaTags from '$lib/components/MetaTags.svelte';
+  import { scale, fade } from 'svelte/transition';
   import type { PageData } from './$types';
 
   let { data } = $props<{ data: PageData }>();
@@ -54,6 +55,23 @@
 
     return items;
   });
+
+  let showBadgeModal = $state(false);
+  let copied = $state(false);
+
+  const badgeUrl = $derived(
+    profile ? `${window.origin}/api/badge/${profile.user_id || profile.id}` : ''
+  );
+  const badgeMarkdown = $derived(`[![Peer Connect Profile](${badgeUrl})](${window.origin}/members/${profile?.user_id || profile?.id})`);
+
+  function copyToClipboard() {
+    if (!badgeMarkdown) return;
+    navigator.clipboard.writeText(badgeMarkdown);
+    copied = true;
+    setTimeout(() => {
+      copied = false;
+    }, 2000);
+  }
 </script>
 
 <MetaTags
@@ -107,6 +125,10 @@
         </div>
         <div class="flex flex-wrap items-center gap-3">
           <a class="btn btn-secondary" href="/mypage">마이페이지</a>
+          <button class="btn btn-secondary" onclick={() => (showBadgeModal = true)}>
+            <Code class="h-4 w-4" />
+            <span>GitHub 배지 받기</span>
+          </button>
           <a class="btn btn-secondary" href="/mypage/avatar">
             <ImageUp class="h-4 w-4" />
             <span>내 프로필 사진 수정하기</span>
@@ -241,4 +263,76 @@
       {/if}
     </section>
   </main>
+{/if}
+
+{#if showBadgeModal && profile}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+    transition:fade={{ duration: 200 }}
+  >
+    <div
+      class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+      onclick={() => (showBadgeModal = false)}
+      role="button"
+      tabindex="0"
+      onkeydown={(e) => e.key === 'Escape' && (showBadgeModal = false)}
+      aria-label="Close modal"
+    ></div>
+    <div
+      class="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5"
+      role="dialog"
+      aria-modal="true"
+      transition:scale={{ start: 0.95, duration: 200 }}
+    >
+      <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+        <h3 class="text-lg font-semibold text-peer-navy">GitHub 프로필 배지</h3>
+        <button
+          class="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+          onclick={() => (showBadgeModal = false)}
+        >
+          <X class="h-5 w-5" />
+        </button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <div class="space-y-2">
+          <p class="text-sm font-medium text-slate-700">미리보기</p>
+          <div class="flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            <img src={badgeUrl} alt="Peer Connect Badge Preview" class="max-w-full shadow-sm rounded-lg" />
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-slate-700">마크다운 코드</p>
+            <span class="text-xs text-slate-500">GitHub README.md에 붙여넣으세요</span>
+          </div>
+          <div class="relative group">
+            <pre class="w-full overflow-x-auto rounded-xl border border-slate-200 bg-slate-900 p-4 text-sm text-slate-300 font-mono scrollbar-hide">{badgeMarkdown}</pre>
+            <button
+              class="absolute right-2 top-2 flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white backdrop-blur hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-white/30"
+              onclick={copyToClipboard}
+            >
+              {#if copied}
+                <Check class="h-3.5 w-3.5" />
+                <span>복사됨</span>
+              {:else}
+                <Copy class="h-3.5 w-3.5" />
+                <span>코드 복사</span>
+              {/if}
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-peer-indigo/5 p-4 text-sm text-peer-indigo">
+          <p class="flex gap-2">
+            <span class="shrink-0">💡</span>
+            <span>
+              이 배지는 실시간으로 업데이트됩니다. 새로운 추천서를 받으면 배지 내용도 자동으로 변경됩니다.
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 {/if}
