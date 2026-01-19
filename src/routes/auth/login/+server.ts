@@ -19,3 +19,8 @@ export const POST: RequestHandler = async ({ locals, url }) => {
 
   throw redirect(303, data.url);
 };
+
+// Also allow GET for direct links (like from public profile "Login" button)
+export const GET: RequestHandler = async (event) => {
+  return POST(event);
+};

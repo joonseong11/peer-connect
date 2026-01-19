@@ -169,22 +169,28 @@ function generateSvg(
     currentY += 120; // Increase height for empty state
   }
 
+  // Handle logic: user or peerconnect
+  const handle = role === 'Peer Connect 멤버' ? 'peerconnect' : 'user';
+
+  // Role Logic: hide if "직무 미정" or specific default
+  const roleDisplay = (role === '직무 미정' || role === '역할 미입력') ? '' : role;
+  const roleNode = roleDisplay ? `<text x="${padding}" y="110" font-size="18" fill="${colors.roleText}">${escapeXml(roleDisplay)}</text>` : '';
+  
   // Footer "More" Text (Static for now as requested design)
-  // Or purely dynamic "Show All" means we don't need "More".
-  // But strictly following image style:
-  // " + 1개의 추천서 더보기 "
-  // We will add a small spacer and footer signature.
   currentY += 20;
   
   const footerHtml = `
     <g transform="translate(${padding}, ${currentY})">
-        <!-- Certified Icon -->
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="${colors.footerText}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" transform="scale(0.8) translate(0,0)" />
-        <text x="24" y="14" font-family="'Pretendard', sans-serif" font-size="13" fill="${colors.footerText}">신뢰할 수 있는 동료</text>
+        <!-- Certified Icon (Check Circle) -->
+        <g transform="scale(0.8) translate(0, 5)">
+          <circle cx="12" cy="12" r="10" fill="none" stroke="${colors.footerText}" stroke-width="1.5" />
+          <path d="M9 12l2 2 4-4" fill="none" stroke="${colors.footerText}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </g>
+        <text x="24" y="20" font-family="'Pretendard', sans-serif" font-size="13" fill="${colors.footerText}">신뢰할 수 있는 동료</text>
     </g>
     <!-- Handle -->
-    <text x="${width - padding}" y="${currentY + 14}" text-anchor="end" font-family="'Pretendard', sans-serif" font-size="13" fill="${colors.footerText}">
-      @${role === 'Peer Connect 멤버' ? 'peerconnect' : 'user'}
+    <text x="${width - padding}" y="${currentY + 20}" text-anchor="end" font-family="'Pretendard', sans-serif" font-size="13" fill="${colors.footerText}">
+      @${escapeXml(name).replace(/\s+/g, '')}
     </text>
   `;
   currentY += 40; // Footer height
@@ -205,11 +211,11 @@ function generateSvg(
       </filter>
     </defs>
     
-    <!-- Overall Background (Border) -->
-    <rect width="100%" height="100%" fill="${colors.bodyBg}" stroke="${colors.borderColor}" stroke-width="1" rx="4" />
+    <!-- Overall Background (NO BORDER) -->
+    <rect width="100%" height="100%" fill="${colors.bodyBg}" rx="4" />
     
     <!-- Header Background -->
-    <path d="M0.5 0.5 h${width-1} v${headerHeight} h-${width-1} v-${headerHeight} z" fill="${colors.headerBg}" />
+    <path d="M0 0 h${width} v${headerHeight} h-${width} v-${headerHeight} z" fill="${colors.headerBg}" />
 
     <!-- Header Content -->
     <!-- Peer Connect Label -->
@@ -219,7 +225,7 @@ function generateSvg(
     <text x="${padding}" y="80" font-weight="bold" font-size="32" fill="${colors.nameText}">${escapeXml(name)}</text>
     
     <!-- Role -->
-    <text x="${padding}" y="110" font-size="18" fill="${colors.roleText}">${escapeXml(role)}</text>
+    ${roleNode}
 
     <!-- Count Badge -->
     <g transform="translate(${width - padding - 80}, 30)">
