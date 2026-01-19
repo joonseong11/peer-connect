@@ -62,7 +62,10 @@
   const badgeUrl = $derived(
     profile ? `${window.origin}/api/badge/${profile.user_id || profile.id}` : ''
   );
-  const badgeMarkdown = $derived(`[![Peer Connect Profile](${badgeUrl})](${window.origin}/members/${profile?.user_id || profile?.id})`);
+  const badgeLink = $derived(
+    profile ? `${window.origin}/api/badge/${profile.user_id || profile.id}/link` : ''
+  );
+  const badgeMarkdown = $derived(`[![Peer Connect Profile](${badgeUrl})](${badgeLink})`);
 
   function copyToClipboard() {
     if (!badgeMarkdown) return;

@@ -1,5 +1,6 @@
 <script lang="ts">
   import MetaTags from '$lib/components/MetaTags.svelte';
+  import { page } from '$app/stores';
   import type { ActionData, PageData } from './$types';
 
   const { data, form } = $props<{ data: PageData; form: ActionData }>();
@@ -210,13 +211,18 @@
           이미 이 동료에게 추천을 남겼어요. 내용을 다시 작성하려면 아래에서 삭제 후 새로
           작성해주세요.
         </p>
-      {:else if profile.user_id === session?.user.id}
+      {:else if session && profile.user_id === session?.user.id}
         <p class="rounded-2xl bg-slate-100/70 px-4 py-3 text-sm text-slate-500">
           나의 프로필에는 추천을 남길 수 없어요.
         </p>
-      {/if}
-
-      {#if !existingEndorsementId && profile.user_id !== session?.user.id}
+      {:else if !session}
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/50 p-6 text-center space-y-3">
+             <p class="text-slate-600 font-medium">로그인하고 동료에게 추천서를 남겨보세요.</p> 
+             <a href={`/auth/login?next=${encodeURIComponent($page.url.pathname)}`} class="btn btn-primary inline-flex">
+                 로그인하기
+             </a>
+          </div>
+      {:else if !existingEndorsementId}
         <form method="post" action="?/endorse" class="space-y-4" onsubmit={handleEndorseSubmit}>
           <label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
             <span>추천 내용 (최소 20자)</span>

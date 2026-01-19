@@ -7,9 +7,10 @@ import { getSupabaseAdminClient } from '$lib/server/supabaseAdmin';
 export const load: PageServerLoad = async ({ locals, params, url }) => {
   const session = await locals.getSession();
 
-  if (!session) {
-    throw redirect(303, '/?authError=signin-required');
-  }
+  // Public access allowed for reading profile
+  // if (!session) {
+  //   throw redirect(303, '/?authError=signin-required');
+  // }
 
   const targetUserId = params.userId;
 
@@ -49,12 +50,18 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
     console.error('Failed to load endorsements', endorsementsError);
   }
 
-  const { data: existingEndorsement } = await locals.supabase
-    .from('endorsements')
-    .select('id')
-    .eq('target_user_id', targetUserId)
-    .eq('author_id', session.user.id)
-    .maybeSingle();
+  let existingEndorsement: { id: string } | null = null;
+  
+  if (session) {
+    const { data } = await locals.supabase
+      .from('endorsements')
+      .select('id')
+      .eq('target_user_id', targetUserId)
+      .eq('author_id', session.user.id)
+      .maybeSingle();
+      
+    existingEndorsement = data;
+  }
 
   const statusParam = url.searchParams.get('endorsementStatus');
   let statusMessage: string | null = null;

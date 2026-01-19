@@ -24,8 +24,7 @@ export const GET: RequestHandler = async ({ params }) => {
   }
 
   // 2. Fetch Endorsements (Count and All)
-  // Limit to 10 for safety in SVG size, though user asked for "all".
-  // 10 is a reasonable "all" for a badge.
+  // Limit to 20 for badge
   const { count, data: endorsements } = await supabase
     .from('endorsements')
     .select('content, created_at, author:profiles!endorsements_author_id_fkey(full_name, role)', { count: 'exact' })
@@ -55,9 +54,9 @@ export const GET: RequestHandler = async ({ params }) => {
 
 function getErrorSvg(message: string) {
   return `
-  <svg width="400" height="100" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
-    <rect width="100%" height="100%" fill="#f8d7da" rx="10" />
-    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="'Pretendard', sans-serif" font-size="14" fill="#721c24">
+  <svg width="600" height="150" viewBox="0 0 600 150" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100%" height="100%" fill="#fff" stroke="#e2e8f0" rx="4" />
+    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="'Pretendard', sans-serif" font-size="14" fill="#ef4444">
       ${message}
     </text>
   </svg>
@@ -72,116 +71,168 @@ function generateSvg(
   const name = profile.full_name || '익명 사용자';
   const role = profile.role || 'Peer Connect 멤버';
   
-  // Theme Colors
-  const bgGradientStart = '#0F172A'; // peer-navy
-  const bgGradientEnd = '#1E293B';   // slate-800
-  const textColor = '#F8FAFC';       // slate-50
-  const subTextColor = '#94A3B8';    // slate-400
-  const accentColor = '#6366f1';     // peer-indigo
-  const cardBg = '#334155';          // slate-700
-  
-  // Layout Constants
-  const width = 600;
-  const padding = 30;
+  // Design Constants
+  const width = 800;
+  const padding = 24;
   const headerHeight = 160; 
-  // Header includes Name, Role, Logo, Stats
   
-  // content calculation
-  let currentY = headerHeight;
-  const itemGap = 20;
+  // Colors (from Image Design)
+  const colors = {
+    headerBg: '#1e293b',    // Dark blue/slate background for header
+    bodyBg: '#ffffff',      // White body
+    borderColor: '#e2e8f0', // Light slate border
+    nameText: '#ffffff',    // White name
+    roleText: '#94a3b8',    // Light gray role
+    logoText: '#64748b',    // Peer Connect label
+    badgeBgStart: '#f59e0b',// Amber 500
+    badgeBgEnd: '#ea580c',  // Orange 600
+    sectionTitle: '#334155',// Slate 700
+    cardBg: '#ffffff',      // White card
+    cardBorder: '#cbd5e1',  // Slate 300
+    quoteText: '#1e293b',   // Slate 800
+    metaText: '#64748b',    // Slate 500
+    footerText: '#64748b'   // Slate 500
+  };
+
+  // Content Layout Calculation
+  let currentY = headerHeight + 30; // Start below header
   const contentWidth = width - (padding * 2);
-  const fontSize = 14;
-  const lineHeight = 20;
-  
-  const endorsementNodes = endorsements.map((item) => {
+
+  // Section Title
+  const titleY = currentY + 10;
+  const titleHtml = `
+    <g transform="translate(${padding}, ${currentY})">
+      <!-- Icon (Users) -->
+      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M16 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75" fill="none" stroke="${colors.sectionTitle}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="scale(0.8) translate(0, 5)" />
+      <text x="30" y="20" font-family="'Pretendard', sans-serif" font-weight="bold" font-size="18" fill="${colors.sectionTitle}">동료 추천서</text>
+    </g>
+  `;
+  currentY += 40;
+
+  // List of Endorsements
+  const cardGap = 16;
+  const cardInnerPadding = 20;
+
+  let endorsementNodes = endorsements.map((item) => {
     // Wrap text logic
-    const lines = wrapText(item.content, 65); // approx 65 chars per line
+    const lines = wrapText(item.content, 85); // Wider cards allow more chars
+    const lineHeight = 24;
     const textHeight = lines.length * lineHeight;
-    const itemHeight = textHeight + 40; // + padding/author info
+    
+    // Height calculation: padding top + text + padding middle + footer + padding bottom
+    const cardHeight = cardInnerPadding + textHeight + 20 + 20 + cardInnerPadding;
     
     // Author text
     const authorName = item.author?.full_name || '알 수 없는 동료';
     const authorRole = item.author?.role || '';
-    const dateStr = new Date(item.created_at).toLocaleDateString('ko-KR');
-    const footerText = `- ${authorName} (${authorRole}) · ${dateStr}`;
+    const dateStr = new Date(item.created_at).getFullYear() + '년'; // Format: 2025년
+    const authorText = `${authorName} · ${authorRole}`;
 
     const node = `
       <g transform="translate(${padding}, ${currentY})">
-        <rect width="${contentWidth}" height="${itemHeight}" rx="8" fill="${cardBg}" fill-opacity="0.4" />
+        <!-- Card Box -->
+        <rect width="${contentWidth}" height="${cardHeight}" rx="12" fill="${colors.cardBg}" stroke="${colors.cardBorder}" stroke-width="1" />
         
-        <!-- Quote Icon -->
-        <text x="15" y="25" font-family="serif" font-size="28" fill="${accentColor}" fill-opacity="0.5">“</text>
-        
-        <!-- Content Lines -->
+        <!-- Content -->
         ${lines.map((line, i) => `
-          <text x="40" y="${28 + (i * lineHeight)}" font-family="'Pretendard', 'Apple SD Gothic Neo', sans-serif" font-size="${fontSize}" fill="${textColor}">
+          <text x="${cardInnerPadding}" y="${cardInnerPadding + 20 + (i * lineHeight)}" font-family="'Pretendard', sans-serif" font-size="15" fill="${colors.quoteText}">
             ${escapeXml(line)}
           </text>
         `).join('')}
         
-        <!-- Author Footer -->
-        <text x="${contentWidth - 15}" y="${itemHeight - 12}" text-anchor="end" font-family="'Pretendard', sans-serif" font-size="12" fill="${subTextColor}">
-          ${escapeXml(footerText)}
+        <!-- Footer (Name & Date) -->
+        <text x="${cardInnerPadding}" y="${cardHeight - cardInnerPadding}" font-family="'Pretendard', sans-serif" font-weight="bold" font-size="14" fill="${colors.quoteText}">
+          ${escapeXml(authorName)} <tspan font-weight="normal" fill="${colors.metaText}">· ${escapeXml(authorRole)}</tspan>
+        </text>
+        
+        <text x="${contentWidth - cardInnerPadding}" y="${cardHeight - cardInnerPadding}" text-anchor="end" font-family="'Pretendard', sans-serif" font-size="14" fill="${colors.metaText}">
+          ${dateStr}
         </text>
       </g>
     `;
     
-    currentY += itemHeight + itemGap;
+    currentY += cardHeight + cardGap;
     return node;
   }).join('');
 
   if (endorsements.length === 0) {
-    const emptyMsg = '아직 받은 추천이 없습니다. 동료에게 추천을 요청해보세요!';
-    endorsementNodes === `
-      <text x="${width/2}" y="${currentY + 20}" text-anchor="middle" font-family="'Pretendard', sans-serif" font-size="14" fill="${subTextColor}">
-        ${emptyMsg}
-      </text>
+    const emptyMsg = '아직 작성된 추천서가 없어요. 클릭하여 추천서 작성하러 가기';
+    const emptyNode = `
+      <g transform="translate(${width/2}, ${currentY + 60})" text-anchor="middle">
+        <text y="0" font-family="'Pretendard', sans-serif" font-size="16" fill="${colors.quoteText}" font-weight="bold">
+          ${escapeXml(emptyMsg)}
+        </text>
+        <rect x="-240" y="-30" width="480" height="50" rx="25" fill="none" stroke="${colors.badgeBgEnd}" stroke-width="2" stroke-dasharray="6 4" />
+      </g>
     `;
-    currentY += 50;
+    endorsementNodes += emptyNode;
+    currentY += 120; // Increase height for empty state
   }
 
-  const totalHeight = currentY + padding;
+  // Footer "More" Text (Static for now as requested design)
+  // Or purely dynamic "Show All" means we don't need "More".
+  // But strictly following image style:
+  // " + 1개의 추천서 더보기 "
+  // We will add a small spacer and footer signature.
+  currentY += 20;
+  
+  const footerHtml = `
+    <g transform="translate(${padding}, ${currentY})">
+        <!-- Certified Icon -->
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="${colors.footerText}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" transform="scale(0.8) translate(0,0)" />
+        <text x="24" y="14" font-family="'Pretendard', sans-serif" font-size="13" fill="${colors.footerText}">신뢰할 수 있는 동료</text>
+    </g>
+    <!-- Handle -->
+    <text x="${width - padding}" y="${currentY + 14}" text-anchor="end" font-family="'Pretendard', sans-serif" font-size="13" fill="${colors.footerText}">
+      @${role === 'Peer Connect 멤버' ? 'peerconnect' : 'user'}
+    </text>
+  `;
+  currentY += 40; // Footer height
 
   return `
-  <svg width="${width}" height="${totalHeight}" viewBox="0 0 ${width} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">
+  <svg width="${width}" height="${currentY}" viewBox="0 0 ${width} ${currentY}" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:${bgGradientStart};stop-opacity:1" />
-        <stop offset="100%" style="stop-color:${bgGradientEnd};stop-opacity:1" />
-      </linearGradient>
       <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         text { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif; }
       </style>
+      <linearGradient id="badgeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:${colors.badgeBgStart};stop-opacity:1" />
+        <stop offset="100%" style="stop-color:${colors.badgeBgEnd};stop-opacity:1" />
+      </linearGradient>
+      <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.25"/>
+      </filter>
     </defs>
     
-    <rect width="100%" height="100%" fill="url(#bg)" rx="16" />
+    <!-- Overall Background (Border) -->
+    <rect width="100%" height="100%" fill="${colors.bodyBg}" stroke="${colors.borderColor}" stroke-width="1" rx="4" />
     
-    <!-- Header Section -->
-    <!-- Logo -->
-    <text x="${width - padding}" y="45" text-anchor="end" font-weight="bold" font-size="18" fill="${accentColor}">
-      Peer Connect
-    </text>
+    <!-- Header Background -->
+    <path d="M0.5 0.5 h${width-1} v${headerHeight} h-${width-1} v-${headerHeight} z" fill="${colors.headerBg}" />
 
-    <!-- Name & Role -->
-    <text x="${padding}" y="50" font-weight="bold" font-size="28" fill="${textColor}">
-      ${escapeXml(name)}
-    </text>
-    <text x="${padding}" y="80" font-size="16" fill="${subTextColor}">
-      ${escapeXml(role)}
-    </text>
+    <!-- Header Content -->
+    <!-- Peer Connect Label -->
+    <text x="${padding}" y="40" font-size="14" fill="${colors.logoText}">Peer Connect</text>
+    
+    <!-- Name -->
+    <text x="${padding}" y="80" font-weight="bold" font-size="32" fill="${colors.nameText}">${escapeXml(name)}</text>
+    
+    <!-- Role -->
+    <text x="${padding}" y="110" font-size="18" fill="${colors.roleText}">${escapeXml(role)}</text>
 
-    <!-- Divider -->
-    <line x1="${padding}" y1="100" x2="${width - padding}" y2="100" stroke="${subTextColor}" stroke-opacity="0.2" stroke-width="1" />
+    <!-- Count Badge -->
+    <g transform="translate(${width - padding - 80}, 30)">
+        <rect width="80" height="85" rx="12" fill="url(#badgeGradient)" filter="url(#shadow)" />
+        <text x="40" y="45" text-anchor="middle" font-weight="bold" font-size="36" fill="#fff">${count}</text>
+        <text x="40" y="70" text-anchor="middle" font-size="13" fill="#fff" fill-opacity="0.9">추천서</text>
+    </g>
 
-    <!-- Stats Label -->
-    <text x="${padding}" y="135" font-size="15" fill="${subTextColor}">
-      <tspan fill="${accentColor}" font-weight="bold" font-size="18">${count}</tspan>개의 동료 추천
-    </text>
-
-    <!-- Content -->
+    <!-- Body Content -->
+    ${titleHtml}
     ${endorsementNodes}
-    
+    ${footerHtml}
+
   </svg>
   `;
 }
@@ -201,15 +252,9 @@ function wrapText(text: string, maxChars: number): string[] {
   }
   lines.push(currentLine);
   
-  // Handle explicit newlines if any
-  return lines.flatMap(line => {
-    // Simple rough check for CJK characters which take up more visual width
-    // This is valid but primitive wrapping.
-    return line.split('\n');
-  });
+  return lines.flatMap(line => line.split('\n'));
 }
 
-// Rough estimation: CJK chars count as 2, others as 1
 function getErrorLength(str: string): number {
   let len = 0;
   for (let i = 0; i < str.length; i++) {
@@ -218,7 +263,6 @@ function getErrorLength(str: string): number {
   }
   return len;
 }
-
 
 function escapeXml(unsafe: string): string {
   if (!unsafe) return '';
