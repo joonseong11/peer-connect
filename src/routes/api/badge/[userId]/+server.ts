@@ -24,7 +24,8 @@ export const GET: RequestHandler = async ({ params }) => {
   }
 
   // 2. Fetch Endorsements (Count and All)
-  // Limit to 20 for badge
+  // Limit to 20 for badge but we only show top 3.
+  // We need total count for "More" number.
   const { count, data: endorsements } = await supabase
     .from('endorsements')
     .select('content, created_at, author:profiles!endorsements_author_id_fkey(full_name, role)', { count: 'exact' })
@@ -32,17 +33,20 @@ export const GET: RequestHandler = async ({ params }) => {
     .order('created_at', { ascending: false })
     .limit(20);
 
-  const endorsementCount = count ?? 0;
-  
+  const totalCount = count ?? 0;
+  // Show only top 3
+  const visibleEndorsements = endorsements?.slice(0, 3) ?? [];
+  const moreCount = Math.max(0, totalCount - 3);
+
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  const cleanEndorsements = (endorsements ?? []).map((e: any) => ({
+  const cleanEndorsements = visibleEndorsements.map((e: any) => ({
     content: e.content,
     created_at: e.created_at,
     author: Array.isArray(e.author) ? e.author[0] : e.author
   }));
 
   // 3. Generate SVG
-  const svg = generateSvg(profile, endorsementCount, cleanEndorsements);
+  const svg = generateSvg(profile, totalCount, cleanEndorsements, moreCount); // Pass moreCount
 
   return new Response(svg, {
     headers: {
@@ -66,7 +70,8 @@ function getErrorSvg(message: string) {
 function generateSvg(
   profile: { full_name: string | null; role: string | null },
   count: number,
-  endorsements: Array<{ content: string; created_at: string; author: { full_name: string | null; role: string | null } | null }>
+  endorsements: Array<{ content: string; created_at: string; author: { full_name: string | null; role: string | null } | null }>,
+  moreCount: number
 ) {
   const name = profile.full_name || '익명 사용자';
   const role = profile.role || 'Peer Connect 멤버';
@@ -116,34 +121,19 @@ function generateSvg(
   let endorsementNodes = endorsements.map((item) => {
     // 1. Content: Single line, no newlines, truncate
     const rawOneLine = item.content.replace(/\r?\n|\r/g, ' ');
-    // Truncate logic: visually approx 60-70 chars? let's try strict char limit + "..."
-    // If user wants "...더보기" specifically:
-    // Actually SVG text is hard to "click" "more", but visual cue is "..."
-    // User requested "... 더보기" literally.
+    // Truncate logic
     const maxChars = 55;
     let contentDisplay = rawOneLine;
     let isTruncated = false;
     
     if (getErrorLength(rawOneLine) > maxChars) {
-      // Crude abbreviation
-      // slicing by char length isn't perfect for mixed KR/EN but simple enough
       contentDisplay = rawOneLine.slice(0, 55) + '...'; 
-      isTruncated = true; // We can add "더보기" text visually if needed
+      isTruncated = true;
     }
 
-    // Single line means we don't define 'lines' array. We just have one line.
-    // However, to keep existing structure simpler, let's just make lines = [contentDisplay]
-    // But we need to handle "더보기" style. 
-    // Let's stick to standard truncation for SVG readability.
-    // User asked for "더보기 버튼을 추가해줘" -> "Add a 'more' button".
-    // In an SVG image embedded in README, buttons don't work (no JS). 
-    // The link wraps the whole image. So "Button" is visual only.
-    
-    const lines = [contentDisplay]; 
     const lineHeight = 24;
     
-    // Height calculation: fixed for single line cards or slightly dynamic?
-    // Since it's always 1 line now, it's fixed.
+    // Height calculation: fixed for single line cards
     const cardHeight = cardInnerPadding + lineHeight + 20 + 20 + cardInnerPadding; // roughly 80-90px
     
     // Author text
@@ -196,6 +186,18 @@ function generateSvg(
     `;
     endorsementNodes += emptyNode;
     currentY += 120; // Increase height for empty state
+  }
+
+  // Handle "More" text if needed
+  if (moreCount > 0) {
+    const moreText = `+ ${moreCount}개의 추천서 더 보기`;
+    const moreNode = `
+      <g transform="translate(${width/2}, ${currentY + 10})" text-anchor="middle" cursor="pointer">
+          <text font-family="'Pretendard', sans-serif" font-size="14" fill="${colors.metaText}" font-weight="bold">${moreText}</text>
+      </g>
+    `;
+    endorsementNodes += moreNode;
+    currentY += 30; // Add space for more text
   }
 
   // Handle logic: user or peerconnect
