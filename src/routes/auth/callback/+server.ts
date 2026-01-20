@@ -20,7 +20,7 @@ export const GET: RequestHandler = async ({ url, locals, cookies }) => {
       // Check for pending invite code logic
       const pendingInviteCode = cookies.get('pending_invite_code');
       if (pendingInviteCode) {
-        cookies.delete('pending_invite_code', { path: '/' });
+        console.log('[Auth Callback] Found pending invite code, attempting redemption...');
         const result = await redeemInviteCode({
           supabase: locals.supabase,
           session,
@@ -28,14 +28,19 @@ export const GET: RequestHandler = async ({ url, locals, cookies }) => {
         });
 
         if (result.success) {
+          console.log(
+            '[Auth Callback] Invite redeemed successfully, redirecting to:',
+            result.redirectTo
+          );
+          cookies.delete('pending_invite_code', { path: '/' });
           throw redirect(303, result.redirectTo);
         } else {
-          // If failed, maybe we still want to redirect to the original destination but with a status?
-          // Or just proceed as normal but maybe log the error?
-          // For now, let's proceed to profile check or default redirect, maybe could append status query param
-          // But appending to defaultRedirect might be complex if it already has params.
-          // Let's just proceed.
-          console.warn('Pending invite redemption failed during callback', result);
+          console.warn('[Auth Callback] Invite redemption failed:', result);
+          // If it's a definitive error (invalid, used, etc), clear the cookie so we don't retry loop
+          if (result.reason !== 'generic') {
+            cookies.delete('pending_invite_code', { path: '/' });
+          }
+          // If generic error, we keep the cookie and maybe the profile page will try again or user tries again?
         }
       }
 

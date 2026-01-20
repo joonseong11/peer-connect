@@ -145,8 +145,9 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   const isInvitePage = url.pathname.startsWith('/invite');
   const isProfilePage = url.pathname.startsWith('/profile');
   const isAuthRoute = url.pathname.startsWith('/auth');
+  const isMembersRoute = url.pathname.startsWith('/members');
 
-  if (requireInvite && !isInvitePage && !isProfilePage && !isAuthRoute) {
+  if (requireInvite && !isInvitePage && !isProfilePage && !isAuthRoute && !isMembersRoute) {
     throw redirect(303, '/invite');
   }
 
