@@ -28,7 +28,9 @@ export const GET: RequestHandler = async ({ params }) => {
   // We need total count for "More" number.
   const { count, data: endorsements } = await supabase
     .from('endorsements')
-    .select('content, created_at, author:profiles!endorsements_author_id_fkey(full_name, role)', { count: 'exact' })
+    .select('content, created_at, author:profiles!endorsements_author_id_fkey(full_name, role)', {
+      count: 'exact'
+    })
     .eq('target_user_id', userId)
     .order('created_at', { ascending: false })
     .limit(20);
@@ -40,7 +42,7 @@ export const GET: RequestHandler = async ({ params }) => {
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const cleanEndorsements = visibleEndorsements.map((e: any) => ({
-    content: e.content,
+    content: e.content?.replace(/[\r\n]+/g, ' ') || '',
     created_at: e.created_at,
     author: Array.isArray(e.author) ? e.author[0] : e.author
   }));
@@ -70,45 +72,49 @@ function getErrorSvg(message: string) {
 function generateSvg(
   profile: { full_name: string | null; role: string | null },
   count: number,
-  endorsements: Array<{ content: string; created_at: string; author: { full_name: string | null; role: string | null } | null }>,
+  endorsements: Array<{
+    content: string;
+    created_at: string;
+    author: { full_name: string | null; role: string | null } | null;
+  }>,
   moreCount: number
 ) {
   const name = profile.full_name || '익명 사용자';
   const role = profile.role || 'Peer Connect 멤버';
-  
+
   // Design Constants
   const width = 800;
   const padding = 24;
-  const headerHeight = 160; 
-  
+  const headerHeight = 160;
+
   // Colors (from Image Design)
   const colors = {
-    headerBg: '#1e293b',    // Dark blue/slate background for header
-    bodyBg: '#ffffff',      // White body
+    headerBg: '#1e293b', // Dark blue/slate background for header
+    bodyBg: '#ffffff', // White body
     borderColor: '#e2e8f0', // Light slate border
-    nameText: '#ffffff',    // White name
-    roleText: '#94a3b8',    // Light gray role
-    logoText: '#64748b',    // Peer Connect label
-    badgeBgStart: '#f59e0b',// Amber 500
-    badgeBgEnd: '#ea580c',  // Orange 600
-    sectionTitle: '#334155',// Slate 700
-    cardBg: '#ffffff',      // White card
-    cardBorder: '#cbd5e1',  // Slate 300
-    quoteText: '#1e293b',   // Slate 800
-    metaText: '#64748b',    // Slate 500
-    footerText: '#64748b'   // Slate 500
+    nameText: '#ffffff', // White name
+    roleText: '#94a3b8', // Light gray role
+    logoText: '#64748b', // Peer Connect label
+    badgeBgStart: '#f59e0b', // Amber 500
+    badgeBgEnd: '#ea580c', // Orange 600
+    sectionTitle: '#334155', // Slate 700
+    cardBg: '#ffffff', // White card
+    cardBorder: '#cbd5e1', // Slate 300
+    quoteText: '#1e293b', // Slate 800
+    metaText: '#64748b', // Slate 500
+    footerText: '#64748b' // Slate 500
   };
 
   // Content Layout Calculation
   let currentY = headerHeight + 30; // Start below header
-  const contentWidth = width - (padding * 2);
+  const contentWidth = width - padding * 2;
 
   // Section Title
   const titleY = currentY + 10;
   const titleHtml = `
     <g transform="translate(${padding}, ${currentY})">
-      <!-- Icon (Users) -->
-      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M16 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75" fill="none" stroke="${colors.sectionTitle}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="scale(0.8) translate(0, 5)" />
+      <!-- Icon (Message Square) -->
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="${colors.sectionTitle}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="scale(0.8) translate(0, 5)" />
       <text x="30" y="20" font-family="'Pretendard', sans-serif" font-weight="bold" font-size="18" fill="${colors.sectionTitle}">동료 추천서</text>
     </g>
   `;
@@ -118,40 +124,46 @@ function generateSvg(
   const cardGap = 16;
   const cardInnerPadding = 20;
 
-  let endorsementNodes = endorsements.map((item) => {
-    // 1. Content: Full text (wrapped)
-    // Restore wrapping logic for full content display
-    const lines = wrapText(item.content, 85); 
-    const lineHeight = 24;
-    const textHeight = lines.length * lineHeight;
-    
-    // Height calculation: padding top + text + padding middle + footer + padding bottom
-    const cardHeight = cardInnerPadding + textHeight + 20 + 20 + cardInnerPadding;
-    
-    // Author text
-    const authorName = item.author?.full_name || '알 수 없는 동료';
-    const rawAuthorRole = item.author?.role || '';
-    const authorRoleDisplay = (rawAuthorRole === '직무 미정' || rawAuthorRole === '역할 미입력') ? '' : rawAuthorRole;
-    
-    // Date Format: 25.10.21
-    const d = new Date(item.created_at);
-    // manually format yy.mm.dd
-    const yy = String(d.getFullYear()).slice(2);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const dateStr = `${yy}.${mm}.${dd}`;
+  let endorsementNodes = endorsements
+    .map((item) => {
+      // 1. Content: Full text (wrapped)
+      // Restore wrapping logic for full content display
+      const lines = wrapText(item.content, 95);
+      const lineHeight = 24;
+      const textHeight = lines.length * lineHeight;
 
-    const node = `
+      // Height calculation: padding top + text + padding middle + footer + padding bottom
+      const cardHeight = cardInnerPadding + textHeight + 20 + 20 + cardInnerPadding;
+
+      // Author text
+      const authorName = item.author?.full_name || '알 수 없는 동료';
+      const rawAuthorRole = item.author?.role || '';
+      const authorRoleDisplay =
+        rawAuthorRole === '직무 미정' || rawAuthorRole === '역할 미입력' ? '' : rawAuthorRole;
+
+      // Date Format: 25.10.21
+      const d = new Date(item.created_at);
+      // manually format yy.mm.dd
+      const yy = String(d.getFullYear()).slice(2);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${yy}.${mm}.${dd}`;
+
+      const node = `
       <g transform="translate(${padding}, ${currentY})">
         <!-- Card Box -->
         <rect width="${contentWidth}" height="${cardHeight}" rx="12" fill="${colors.cardBg}" stroke="${colors.cardBorder}" stroke-width="1" />
         
         <!-- Content -->
-        ${lines.map((line, i) => `
-          <text x="${cardInnerPadding}" y="${cardInnerPadding + 20 + (i * lineHeight)}" font-family="'Pretendard', sans-serif" font-size="15" fill="${colors.quoteText}">
+        ${lines
+          .map(
+            (line, i) => `
+          <text x="${cardInnerPadding}" y="${cardInnerPadding + 20 + i * lineHeight}" font-family="'Pretendard', sans-serif" font-size="15" fill="${colors.quoteText}">
             ${escapeXml(line)}
           </text>
-        `).join('')}
+        `
+          )
+          .join('')}
         
         <!-- Footer (Name & Date) -->
         <text x="${cardInnerPadding}" y="${cardHeight - cardInnerPadding}" font-family="'Pretendard', sans-serif" font-weight="bold" font-size="14" fill="${colors.quoteText}">
@@ -163,15 +175,16 @@ function generateSvg(
         </text>
       </g>
     `;
-    
-    currentY += cardHeight + cardGap;
-    return node;
-  }).join('');
+
+      currentY += cardHeight + cardGap;
+      return node;
+    })
+    .join('');
 
   if (endorsements.length === 0) {
     const emptyMsg = '아직 작성된 추천서가 없어요. 클릭하여 추천서 작성하러 가기';
     const emptyNode = `
-      <g transform="translate(${width/2}, ${currentY + 60})" text-anchor="middle">
+      <g transform="translate(${width / 2}, ${currentY + 60})" text-anchor="middle">
         <text y="0" font-family="'Pretendard', sans-serif" font-size="16" fill="${colors.quoteText}" font-weight="bold">
           ${escapeXml(emptyMsg)}
         </text>
@@ -186,7 +199,7 @@ function generateSvg(
   if (moreCount > 0) {
     const moreText = `+ ${moreCount}개의 추천서 더 보기`;
     const moreNode = `
-      <g transform="translate(${width/2}, ${currentY + 10})" text-anchor="middle" cursor="pointer">
+      <g transform="translate(${width / 2}, ${currentY + 10})" text-anchor="middle" cursor="pointer">
           <text font-family="'Pretendard', sans-serif" font-size="14" fill="${colors.metaText}" font-weight="bold">${moreText}</text>
       </g>
     `;
@@ -198,18 +211,20 @@ function generateSvg(
   const handle = role === 'Peer Connect 멤버' ? 'peerconnect' : 'user';
 
   // Role Logic: hide if "직무 미정" or specific default
-  const roleDisplay = (role === '직무 미정' || role === '역할 미입력') ? '' : role;
-  const roleNode = roleDisplay ? `<text x="${padding}" y="110" font-size="18" fill="${colors.roleText}">${escapeXml(roleDisplay)}</text>` : '';
-  
+  const roleDisplay = role === '직무 미정' || role === '역할 미입력' ? '' : role;
+  const roleNode = roleDisplay
+    ? `<text x="${padding}" y="110" font-size="18" fill="${colors.roleText}">${escapeXml(roleDisplay)}</text>`
+    : '';
+
   // Footer "More" Text (Static for now as requested design)
   currentY += 20;
-  
+
   const footerHtml = `
     <g transform="translate(${padding}, ${currentY})">
-        <!-- Certified Icon (Check Circle) -->
-        <g transform="scale(0.8) translate(0, 5)">
-          <circle cx="12" cy="12" r="10" fill="none" stroke="${colors.footerText}" stroke-width="1.5" />
-          <path d="M9 12l2 2 4-4" fill="none" stroke="${colors.footerText}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        <!-- Certified Icon (Shield Check) -->
+        <g transform="scale(0.8) translate(0, 4)">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="${colors.footerText}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 12l2 2 4-4" fill="none" stroke="${colors.footerText}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </g>
         <text x="24" y="20" font-family="'Pretendard', sans-serif" font-size="13" fill="${colors.footerText}">신뢰할 수 있는 동료</text>
     </g>
@@ -274,23 +289,23 @@ function wrapText(text: string, maxChars: number): string[] {
   let currentLine = words[0];
 
   for (let i = 1; i < words.length; i++) {
-    if (getErrorLength(currentLine + " " + words[i]) < maxChars) {
-      currentLine += " " + words[i];
+    if (getErrorLength(currentLine + ' ' + words[i]) < maxChars) {
+      currentLine += ' ' + words[i];
     } else {
       lines.push(currentLine);
       currentLine = words[i];
     }
   }
   lines.push(currentLine);
-  
-  return lines.flatMap(line => line.split('\n'));
+
+  return lines.flatMap((line) => line.split('\n'));
 }
 
 function getErrorLength(str: string): number {
   let len = 0;
   for (let i = 0; i < str.length; i++) {
     const c = str.charCodeAt(i);
-    len += (c > 128) ? 2 : 1;
+    len += c > 128 ? 2 : 1;
   }
   return len;
 }
@@ -299,12 +314,18 @@ function escapeXml(unsafe: string): string {
   if (!unsafe) return '';
   return unsafe.replace(/[<>&'"]/g, (c) => {
     switch (c) {
-      case '<': return '&lt;';
-      case '>': return '&gt;';
-      case '&': return '&amp;';
-      case '\'': return '&apos;';
-      case '"': return '&quot;';
-      default: return c;
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '&':
+        return '&amp;';
+      case "'":
+        return '&apos;';
+      case '"':
+        return '&quot;';
+      default:
+        return c;
     }
   });
 }
