@@ -119,22 +119,14 @@ function generateSvg(
   const cardInnerPadding = 20;
 
   let endorsementNodes = endorsements.map((item) => {
-    // 1. Content: Single line, no newlines, truncate
-    const rawOneLine = item.content.replace(/\r?\n|\r/g, ' ');
-    // Truncate logic
-    const maxChars = 55;
-    let contentDisplay = rawOneLine;
-    let isTruncated = false;
-    
-    if (getErrorLength(rawOneLine) > maxChars) {
-      contentDisplay = rawOneLine.slice(0, 55) + '...'; 
-      isTruncated = true;
-    }
-
+    // 1. Content: Full text (wrapped)
+    // Restore wrapping logic for full content display
+    const lines = wrapText(item.content, 85); 
     const lineHeight = 24;
+    const textHeight = lines.length * lineHeight;
     
-    // Height calculation: fixed for single line cards
-    const cardHeight = cardInnerPadding + lineHeight + 20 + 20 + cardInnerPadding; // roughly 80-90px
+    // Height calculation: padding top + text + padding middle + footer + padding bottom
+    const cardHeight = cardInnerPadding + textHeight + 20 + 20 + cardInnerPadding;
     
     // Author text
     const authorName = item.author?.full_name || '알 수 없는 동료';
@@ -155,9 +147,11 @@ function generateSvg(
         <rect width="${contentWidth}" height="${cardHeight}" rx="12" fill="${colors.cardBg}" stroke="${colors.cardBorder}" stroke-width="1" />
         
         <!-- Content -->
-        <text x="${cardInnerPadding}" y="${cardInnerPadding + 20}" font-family="'Pretendard', sans-serif" font-size="15" fill="${colors.quoteText}">
-           ${escapeXml(contentDisplay)} ${isTruncated ? `<tspan fill="${colors.metaText}" font-size="13" font-weight="bold">더보기</tspan>` : ''}
-        </text>
+        ${lines.map((line, i) => `
+          <text x="${cardInnerPadding}" y="${cardInnerPadding + 20 + (i * lineHeight)}" font-family="'Pretendard', sans-serif" font-size="15" fill="${colors.quoteText}">
+            ${escapeXml(line)}
+          </text>
+        `).join('')}
         
         <!-- Footer (Name & Date) -->
         <text x="${cardInnerPadding}" y="${cardHeight - cardInnerPadding}" font-family="'Pretendard', sans-serif" font-weight="bold" font-size="14" fill="${colors.quoteText}">
