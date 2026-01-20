@@ -114,19 +114,50 @@ function generateSvg(
   const cardInnerPadding = 20;
 
   let endorsementNodes = endorsements.map((item) => {
-    // Wrap text logic
-    const lines = wrapText(item.content, 85); // Wider cards allow more chars
-    const lineHeight = 24;
-    const textHeight = lines.length * lineHeight;
+    // 1. Content: Single line, no newlines, truncate
+    const rawOneLine = item.content.replace(/\r?\n|\r/g, ' ');
+    // Truncate logic: visually approx 60-70 chars? let's try strict char limit + "..."
+    // If user wants "...더보기" specifically:
+    // Actually SVG text is hard to "click" "more", but visual cue is "..."
+    // User requested "... 더보기" literally.
+    const maxChars = 55;
+    let contentDisplay = rawOneLine;
+    let isTruncated = false;
     
-    // Height calculation: padding top + text + padding middle + footer + padding bottom
-    const cardHeight = cardInnerPadding + textHeight + 20 + 20 + cardInnerPadding;
+    if (getErrorLength(rawOneLine) > maxChars) {
+      // Crude abbreviation
+      // slicing by char length isn't perfect for mixed KR/EN but simple enough
+      contentDisplay = rawOneLine.slice(0, 55) + '...'; 
+      isTruncated = true; // We can add "더보기" text visually if needed
+    }
+
+    // Single line means we don't define 'lines' array. We just have one line.
+    // However, to keep existing structure simpler, let's just make lines = [contentDisplay]
+    // But we need to handle "더보기" style. 
+    // Let's stick to standard truncation for SVG readability.
+    // User asked for "더보기 버튼을 추가해줘" -> "Add a 'more' button".
+    // In an SVG image embedded in README, buttons don't work (no JS). 
+    // The link wraps the whole image. So "Button" is visual only.
+    
+    const lines = [contentDisplay]; 
+    const lineHeight = 24;
+    
+    // Height calculation: fixed for single line cards or slightly dynamic?
+    // Since it's always 1 line now, it's fixed.
+    const cardHeight = cardInnerPadding + lineHeight + 20 + 20 + cardInnerPadding; // roughly 80-90px
     
     // Author text
     const authorName = item.author?.full_name || '알 수 없는 동료';
-    const authorRole = item.author?.role || '';
-    const dateStr = new Date(item.created_at).getFullYear() + '년'; // Format: 2025년
-    const authorText = `${authorName} · ${authorRole}`;
+    const rawAuthorRole = item.author?.role || '';
+    const authorRoleDisplay = (rawAuthorRole === '직무 미정' || rawAuthorRole === '역할 미입력') ? '' : rawAuthorRole;
+    
+    // Date Format: 25.10.21
+    const d = new Date(item.created_at);
+    // manually format yy.mm.dd
+    const yy = String(d.getFullYear()).slice(2);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${yy}.${mm}.${dd}`;
 
     const node = `
       <g transform="translate(${padding}, ${currentY})">
@@ -134,15 +165,13 @@ function generateSvg(
         <rect width="${contentWidth}" height="${cardHeight}" rx="12" fill="${colors.cardBg}" stroke="${colors.cardBorder}" stroke-width="1" />
         
         <!-- Content -->
-        ${lines.map((line, i) => `
-          <text x="${cardInnerPadding}" y="${cardInnerPadding + 20 + (i * lineHeight)}" font-family="'Pretendard', sans-serif" font-size="15" fill="${colors.quoteText}">
-            ${escapeXml(line)}
-          </text>
-        `).join('')}
+        <text x="${cardInnerPadding}" y="${cardInnerPadding + 20}" font-family="'Pretendard', sans-serif" font-size="15" fill="${colors.quoteText}">
+           ${escapeXml(contentDisplay)} ${isTruncated ? `<tspan fill="${colors.metaText}" font-size="13" font-weight="bold">더보기</tspan>` : ''}
+        </text>
         
         <!-- Footer (Name & Date) -->
         <text x="${cardInnerPadding}" y="${cardHeight - cardInnerPadding}" font-family="'Pretendard', sans-serif" font-weight="bold" font-size="14" fill="${colors.quoteText}">
-          ${escapeXml(authorName)} <tspan font-weight="normal" fill="${colors.metaText}">· ${escapeXml(authorRole)}</tspan>
+          ${escapeXml(authorName)} ${authorRoleDisplay ? `<tspan font-weight="normal" fill="${colors.metaText}">· ${escapeXml(authorRoleDisplay)}</tspan>` : ''}
         </text>
         
         <text x="${contentWidth - cardInnerPadding}" y="${cardHeight - cardInnerPadding}" text-anchor="end" font-family="'Pretendard', sans-serif" font-size="14" fill="${colors.metaText}">
