@@ -4,8 +4,38 @@ import { hasProfileEmailColumn } from '$lib/server/profileEmailColumn';
 import { notifyEndorsementReceived } from '$lib/server/notifications';
 import { getSupabaseAdminClient } from '$lib/server/supabaseAdmin';
 
-export const load: PageServerLoad = async ({ locals, params, url }) => {
+import { redeemInviteCode } from '$lib/server/invite';
+
+export const load: PageServerLoad = async ({ locals, params, url, cookies }) => {
   const session = await locals.getSession();
+
+  const pendingInviteCode =
+    cookies.get('pending_invite_code') || url.searchParams.get('inviteCode');
+
+  if (session && pendingInviteCode) {
+    // Attempt to redeem the invite code silently
+    const result = await redeemInviteCode({
+      supabase: locals.supabase,
+      session,
+      code: pendingInviteCode
+    });
+
+    if (result.success) {
+      cookies.delete('pending_invite_code', { path: '/' });
+      // If the result redirect is the same as current page with different params,
+      // it might be cleaner to just redirect.
+      throw redirect(303, result.redirectTo);
+    } else {
+      // If failed (e.g. already linked), we just clear the cookie/ignore and show profile
+      // But we might want to preserve the cookie if it failed for a transient reason?
+      // redeemInviteCode returns 'already-linked', 'already-used', 'invalid'.
+      // If 'already-linked', we can clear cookie.
+      // If 'invalid', we can clear cookie.
+      // If 'already-used', clear cookie.
+      // Basically clear cookie on any definitive result.
+      cookies.delete('pending_invite_code', { path: '/' });
+    }
+  }
 
   // Public access allowed for reading profile
   // if (!session) {
@@ -51,7 +81,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
   }
 
   let existingEndorsement: { id: string } | null = null;
-  
+
   if (session) {
     const { data } = await locals.supabase
       .from('endorsements')
@@ -59,7 +89,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
       .eq('target_user_id', targetUserId)
       .eq('author_id', session.user.id)
       .maybeSingle();
-      
+
     existingEndorsement = data;
   }
 

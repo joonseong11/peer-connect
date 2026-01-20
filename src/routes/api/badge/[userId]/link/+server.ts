@@ -6,13 +6,25 @@ import type { RequestHandler } from './$types';
 // This ensures they don't conflict with regular user invite slots (1, 2, etc.)
 const BADGE_INVITE_SLOT_INDEX = 999;
 
-export const GET: RequestHandler = async ({ params, url }) => {
+export const GET: RequestHandler = async ({ params, url, cookies }) => {
   const userId = params.userId;
   const supabase = getSupabaseAdminClient();
 
   if (!supabase) {
     throw error(500, 'Server configuration error');
   }
+
+  // Helper to set cookie and redirect
+  const setCookieAndRedirect = (code: string): never => {
+    cookies.set('pending_invite_code', code, {
+      path: '/',
+      maxAge: 60 * 60 * 24, // 24 hours
+      httpOnly: true,
+      sameSite: 'lax'
+    });
+    // Redirect to the user's profile
+    throw redirect(303, `/members/${userId}?inviteCode=${code}`);
+  };
 
   // 1. Check if a Badge Invite already exists for this user
   const { data: existingInvite } = await supabase
@@ -23,7 +35,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
     .maybeSingle();
 
   if (existingInvite) {
-    throw redirect(303, `/invite?code=${existingInvite.code}`);
+    setCookieAndRedirect(existingInvite.code);
   }
 
   // 2. If not, verify the user exists first (optimization to avoid creating invites for invalid IDs)
@@ -46,7 +58,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
     inviter_user_id: userId,
     slot_index: BADGE_INVITE_SLOT_INDEX,
     max_redemptions: null, // Unlimited
-    beta_unlimited: true   // Explicitly mark as unlimited
+    beta_unlimited: true // Explicitly mark as unlimited
   });
 
   if (insertError) {
@@ -54,6 +66,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
     throw error(500, 'Failed to generate invite link');
   }
 
-  // 4. Redirect to the invite page with the new code
-  throw redirect(303, `/invite?code=${code}`);
+  // 4. Redirect to the profile page with the new code
+  setCookieAndRedirect(code);
+  return new Response();
 };

@@ -53,7 +53,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-  default: async ({ request, locals }) => {
+  default: async ({ request, locals, url }) => {
     const session = await locals.getSession();
 
     if (!session) {
@@ -183,6 +183,11 @@ export const actions: Actions = {
         serverMessage: '프로필 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
         values
       });
+    }
+
+    const next = url.searchParams.get('next');
+    if (next) {
+      throw redirect(303, next);
     }
 
     return {
