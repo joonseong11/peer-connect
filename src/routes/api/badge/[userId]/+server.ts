@@ -113,8 +113,13 @@ function generateSvg(
   const titleY = currentY + 10;
   const titleHtml = `
     <g transform="translate(${padding}, ${currentY})">
-      <!-- Icon (Message Square) -->
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="${colors.sectionTitle}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="scale(0.8) translate(0, 5)" />
+      <!-- Icon (Users) -->
+      <g transform="scale(0.8) translate(0, 4)">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill="none" stroke="${colors.sectionTitle}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="9" cy="7" r="4" fill="none" stroke="${colors.sectionTitle}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" fill="none" stroke="${colors.sectionTitle}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" fill="none" stroke="${colors.sectionTitle}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
       <text x="30" y="20" font-family="'Pretendard', sans-serif" font-weight="bold" font-size="18" fill="${colors.sectionTitle}">동료 추천서</text>
     </g>
   `;
@@ -128,7 +133,7 @@ function generateSvg(
     .map((item) => {
       // 1. Content: Full text (wrapped)
       // Restore wrapping logic for full content display
-      const lines = wrapText(item.content, 95);
+      const lines = wrapText(item.content, 115);
       const lineHeight = 24;
       const textHeight = lines.length * lineHeight;
 
@@ -222,11 +227,11 @@ function generateSvg(
   const footerHtml = `
     <g transform="translate(${padding}, ${currentY})">
         <!-- Certified Icon (Shield Check) -->
-        <g transform="scale(0.8) translate(0, 4)">
+        <g transform="translate(0, 2) scale(0.8)">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="${colors.footerText}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M9 12l2 2 4-4" fill="none" stroke="${colors.footerText}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </g>
-        <text x="24" y="20" font-family="'Pretendard', sans-serif" font-size="13" fill="${colors.footerText}">신뢰할 수 있는 동료</text>
+        <text x="24" y="12" dominant-baseline="middle" font-family="'Pretendard', sans-serif" font-size="13" fill="${colors.footerText}">신뢰할 수 있는 동료</text>
     </g>
     <!-- Handle -->
     <text x="${width - padding}" y="${currentY + 20}" text-anchor="end" font-family="'Pretendard', sans-serif" font-size="13" fill="${colors.footerText}">
