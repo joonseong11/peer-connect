@@ -47,11 +47,11 @@
   <div class="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-4 sm:px-8 lg:px-10">
     <a class="min-w-0 shrink-0 text-peer-ink no-underline" href="/">
       <div class="flex items-center gap-3">
-        <span
-          class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-peer-ink text-sm font-semibold text-peer-paper"
-        >
-          PC
-        </span>
+        <img
+          class="h-10 w-10 rounded-[12px] border border-peer-stone bg-white object-cover shadow-panel"
+          src="/favicon.svg"
+          alt="Peer Connect 로고"
+        />
         <div class="hidden min-w-0 sm:block">
           <p class="font-display text-lg font-semibold tracking-[-0.01em] text-peer-ink">
             Peer Connect

@@ -73,9 +73,7 @@
     const checkpoints = [
       full_name.trim().length > 0,
       role.trim().length > 0,
-      introduction.trim().length > 0,
-      career_history.trim().length > 0,
-      Boolean(contact_linkedin.trim() || contact_github.trim() || contact_email.trim())
+      introduction.trim().length > 0
     ];
 
     return Math.round((checkpoints.filter(Boolean).length / checkpoints.length) * 100);

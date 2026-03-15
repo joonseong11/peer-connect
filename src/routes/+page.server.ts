@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { INVITES_ENABLED } from '$lib/config';
 import type { Actions, PageServerLoad } from './$types';
 
 type HomeProfileRow = {
@@ -10,6 +11,7 @@ type HomeProfileRow = {
   contact_github: string | null;
   contact_email: string | null;
   photo_url: string | null;
+  profile_completed_at: string | null;
   updated_at: string | null;
 };
 
@@ -45,13 +47,11 @@ const buildProfileCompletion = (profile: HomeProfileRow | null) => {
     return 0;
   }
 
-  const fields = [
-    profile.full_name,
-    profile.role,
-    profile.introduction,
-    profile.career_history,
-    profile.contact_linkedin || profile.contact_github || profile.contact_email
-  ];
+  if (profile.profile_completed_at) {
+    return 100;
+  }
+
+  const fields = [profile.full_name, profile.role, profile.introduction];
 
   const completed = fields.filter((value) => Boolean(value && value.trim().length > 0)).length;
   return Math.round((completed / fields.length) * 100);
@@ -59,42 +59,52 @@ const buildProfileCompletion = (profile: HomeProfileRow | null) => {
 
 const buildNextAction = (input: {
   profileCompletion: number;
-  endorsementCount: number;
-  gatheringCount: number;
+  inviterUserId: string | null;
+  hasEndorsedInviter: boolean;
+  inviteePrompt: {
+    inviteeUserId: string;
+    inviteeName: string | null;
+  } | null;
+  invitesEnabled: boolean;
 }) => {
   if (input.profileCompletion < 100) {
     return {
       title: '프로필을 더 완성해보세요',
-      description: '소개와 커리어를 채우면 더 빠르게 신뢰를 만들 수 있습니다.',
+      description: '기본 정보와 소개를 마무리하면 다른 사람이 나를 더 쉽게 이해할 수 있습니다.',
       href: '/profile',
       ctaLabel: '프로필 보완하기'
     };
   }
 
-  if (input.endorsementCount === 0) {
+  if (input.inviterUserId && !input.hasEndorsedInviter) {
     return {
-      title: '동료에게 추천을 남겨보세요',
-      description: '함께 일한 맥락이 기록될수록 네트워크의 밀도도 높아집니다.',
-      href: '/members',
-      ctaLabel: '멤버 둘러보기'
+      title: '나를 초대한 동료에게 추천서를 남겨보세요',
+      description:
+        'Peer Connect에 합류하게 된 첫 연결부터 기록해두면 이후의 관계도 더 단단해집니다.',
+      href: `/members/${input.inviterUserId}?endorsementStatus=prompt`,
+      ctaLabel: '추천서 작성하기'
     };
   }
 
-  if (input.gatheringCount === 0) {
+  if (input.inviteePrompt) {
     return {
-      title: '첫 모임을 직접 열어보세요',
-      description: '가벼운 커피챗도 좋고, 깊은 스터디도 좋습니다.',
-      href: '/gatherings/new',
-      ctaLabel: '모임 열기'
+      title: `${input.inviteePrompt.inviteeName ?? '새 동료'}님에게 첫 추천을 남겨보세요`,
+      description: '내 초대로 합류한 동료에게 첫 추천을 남기면 네트워크의 첫 인상도 더 좋아집니다.',
+      href: `/members/${input.inviteePrompt.inviteeUserId}?endorsementStatus=prompt`,
+      ctaLabel: '추천서 작성하기'
     };
   }
 
-  return {
-    title: '지금 열려 있는 모임을 살펴보세요',
-    description: '새로운 대화는 모임 라운지에서 가장 자주 시작됩니다.',
-    href: '/gatherings',
-    ctaLabel: '모임 보러 가기'
-  };
+  if (input.invitesEnabled) {
+    return {
+      title: '신뢰하는 동료를 초대해보세요',
+      description: '좋은 네트워크는 결국 좋은 사람을 초대하는 데서 시작됩니다.',
+      href: '/invite',
+      ctaLabel: '초대 관리하기'
+    };
+  }
+
+  return null;
 };
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -109,6 +119,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
   const [
     invitePromptResult,
+    inviteLinkResult,
     profileResult,
     memberResult,
     gatheringResult,
@@ -126,9 +137,16 @@ export const load: PageServerLoad = async ({ locals }) => {
       .limit(1)
       .maybeSingle(),
     locals.supabase
+      .from('invite_redemptions')
+      .select('invite:invites!inner(inviter_user_id)')
+      .eq('invitee_user_id', session.user.id)
+      .order('redeemed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    locals.supabase
       .from('profiles')
       .select(
-        'full_name, role, introduction, career_history, contact_linkedin, contact_github, contact_email, photo_url, updated_at'
+        'full_name, role, introduction, career_history, contact_linkedin, contact_github, contact_email, photo_url, profile_completed_at, updated_at'
       )
       .eq('user_id', session.user.id)
       .maybeSingle(),
@@ -158,6 +176,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 
   if (profileResult.error) {
     console.error('Failed to load profile summary for home', profileResult.error);
+  }
+
+  if (inviteLinkResult.error) {
+    console.error('Failed to load inviter link for home', inviteLinkResult.error);
   }
 
   if (memberResult.error) {
@@ -196,6 +218,33 @@ export const load: PageServerLoad = async ({ locals }) => {
       : null;
 
   const profile = (profileResult.data as HomeProfileRow | null) ?? null;
+  const inviteLinkRow = inviteLinkResult.data
+    ? Array.isArray(inviteLinkResult.data.invite)
+      ? inviteLinkResult.data.invite[0]
+      : inviteLinkResult.data.invite
+    : null;
+  const inviterUserId =
+    inviteLinkRow && typeof inviteLinkRow.inviter_user_id === 'string'
+      ? inviteLinkRow.inviter_user_id
+      : null;
+
+  let hasEndorsedInviter = false;
+
+  if (inviterUserId) {
+    const { data: inviterEndorsement, error: inviterEndorsementError } = await locals.supabase
+      .from('endorsements')
+      .select('id')
+      .eq('author_id', session.user.id)
+      .eq('target_user_id', inviterUserId)
+      .maybeSingle();
+
+    if (inviterEndorsementError) {
+      console.error('Failed to load endorsement status for inviter', inviterEndorsementError);
+    } else {
+      hasEndorsedInviter = Boolean(inviterEndorsement?.id);
+    }
+  }
+
   const recentMembers = ((memberResult.data as HomeMemberRow[] | null) ?? []).map((member) => ({
     ...member,
     role: member.role ?? '직군 정보 없음',
@@ -249,8 +298,15 @@ export const load: PageServerLoad = async ({ locals }) => {
       },
       nextAction: buildNextAction({
         profileCompletion,
-        endorsementCount,
-        gatheringCount: recentGatherings.length
+        inviterUserId,
+        hasEndorsedInviter,
+        inviteePrompt: inviteePrompt
+          ? {
+              inviteeUserId: inviteePrompt.inviteeUserId,
+              inviteeName: inviteePrompt.inviteeName
+            }
+          : null,
+        invitesEnabled: INVITES_ENABLED
       }),
       recentMembers: recentMembers.map((member) => ({
         ...member,

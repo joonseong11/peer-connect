@@ -78,11 +78,15 @@
   const nextAction = $derived(homeData?.nextAction ?? null);
   const profileSummary = $derived(homeData?.summary ?? null);
   const profileCard = $derived(homeData?.profile ?? null);
+  const publicProfileHref = $derived(
+    session?.user?.id ? `/members/${session.user.id}` : '/profile'
+  );
   let authError = $state<string | null>(data.authErrorMessage ?? null);
   let supabase: SupabaseClient | null = null;
   const invitesEnabled = $derived(data.invitesEnabled ?? false);
   const authRedirectTarget = $derived(data.authRedirectTarget ?? null);
   const inviteePrompt = $derived(data.inviteePrompt ?? null);
+  const showNextAction = $derived(Boolean(nextAction) && !inviteePrompt);
   let acknowledgeSubmittingIntent = $state<string | null>(null);
   let lastPromptId = $state<string | null>(null);
 
@@ -233,13 +237,15 @@
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
           <a
             class="rounded-[20px] border border-white/10 bg-white/10 p-4 text-peer-paper no-underline transition hover:bg-white/15"
-            href={nextAction?.href ?? '/profile'}
+            href={publicProfileHref}
           >
-            <p class="meta-line text-peer-paper/60">다음 행동</p>
-            <p class="mt-2 text-lg font-semibold">{nextAction?.title}</p>
-            <p class="mt-2 text-sm leading-6 text-peer-paper/70">{nextAction?.description}</p>
+            <p class="meta-line text-peer-paper/60">공개 프로필</p>
+            <p class="mt-2 text-lg font-semibold">추천서와 이력을 한 페이지로 보여줄 수 있습니다</p>
+            <p class="mt-2 text-sm leading-6 text-peer-paper/70">
+              면접관이나 외부 동료에게 공유할 공개 프로필을 바로 확인해보세요.
+            </p>
             <span class="mt-4 inline-flex items-center gap-2 text-sm font-semibold">
-              {nextAction?.ctaLabel}
+              공개 프로필 보기
               <ArrowRight class="h-4 w-4" />
             </span>
           </a>
@@ -367,18 +373,20 @@
       </div>
 
       <div class="space-y-6">
-        <aside class="section-shell space-y-4">
-          <div class="flex items-center gap-2 text-peer-amber">
-            <Sparkles class="h-4 w-4" />
-            <p class="meta-line text-peer-amber">다음 행동</p>
-          </div>
-          <h2 class="text-2xl">{nextAction?.title}</h2>
-          <p class="section-copy">{nextAction?.description}</p>
-          <a class="btn btn-primary w-full" href={nextAction?.href ?? '/profile'}>
-            <span>{nextAction?.ctaLabel ?? '시작하기'}</span>
-            <ArrowRight class="h-4 w-4" />
-          </a>
-        </aside>
+        {#if showNextAction}
+          <aside class="section-shell space-y-4">
+            <div class="flex items-center gap-2 text-peer-amber">
+              <Sparkles class="h-4 w-4" />
+              <p class="meta-line text-peer-amber">다음 행동</p>
+            </div>
+            <h2 class="text-2xl">{nextAction?.title}</h2>
+            <p class="section-copy">{nextAction?.description}</p>
+            <a class="btn btn-primary w-full" href={nextAction?.href ?? '/profile'}>
+              <span>{nextAction?.ctaLabel}</span>
+              <ArrowRight class="h-4 w-4" />
+            </a>
+          </aside>
+        {/if}
 
         <aside class="section-shell space-y-4">
           <div class="flex items-center gap-2 text-peer-forest">

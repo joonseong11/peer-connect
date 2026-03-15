@@ -19,6 +19,9 @@
   const serverMessage = $derived(form?.serverMessage ?? null);
   const deleteError = $derived(form?.deleteError ?? null);
   const endorsementCount = $derived(endorsements.length);
+  const canViewContact = $derived(Boolean(session));
+  const backHref = $derived(session ? '/members' : '/');
+  const backLabel = $derived(session ? '멤버 목록' : '홈');
 
   const metaTitle = $derived(
     profile ? `${profile.full_name} · Peer Connect` : '동료 프로필 · Peer Connect'
@@ -145,7 +148,7 @@
       <h1 class="text-3xl">프로필 정보를 찾을 수 없습니다.</h1>
       <p class="section-copy">초대 링크가 만료되었거나 프로필이 삭제되었을 수 있어요.</p>
       <div class="flex justify-center">
-        <a class="btn btn-primary" href="/members">다른 동료 살펴보기</a>
+        <a class="btn btn-primary" href={session ? '/members' : '/'}>돌아가기</a>
       </div>
     </section>
   </main>
@@ -155,10 +158,10 @@
       <div class="space-y-5">
         <a
           class="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-peer-paper/70 transition hover:bg-white/15 hover:text-peer-paper hover:no-underline"
-          href="/members"
+          href={backHref}
         >
           <span aria-hidden="true">←</span>
-          멤버 목록
+          {backLabel}
         </a>
 
         <div class="flex items-start gap-4">
@@ -185,7 +188,7 @@
             추천 {endorsementCount}개
           </div>
           <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
-            최근 모임 {recentGatherings.length}회
+            최근 개설한 모임 {recentGatherings.length}회
           </div>
           {#each trustTags as tag}
             <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
@@ -210,7 +213,7 @@
             </a>
           {/if}
 
-          {#if contactItems.length > 0}
+          {#if canViewContact && contactItems.length > 0}
             <a
               class="btn btn-secondary border-white/15 bg-white/10 text-peer-paper hover:bg-white/15"
               href="#contact-panel"
@@ -236,6 +239,13 @@
             {loadError}
           </p>
         {/if}
+        {#if !session}
+          <p
+            class="rounded-[20px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-peer-paper/80"
+          >
+            이 페이지는 추천서와 주요 이력을 확인할 수 있는 공개 프로필입니다.
+          </p>
+        {/if}
       </div>
 
       <div class="space-y-4 rounded-[24px] border border-white/10 bg-white/10 p-5">
@@ -259,7 +269,7 @@
             <p class="mt-2 text-2xl font-semibold text-peer-paper">{endorsementCount}개</p>
           </div>
           <div class="rounded-[20px] border border-white/10 bg-white/10 p-4">
-            <p class="meta-line text-peer-paper/60">최근 모임</p>
+            <p class="meta-line text-peer-paper/60">최근 개설한 모임</p>
             <p class="mt-2 text-2xl font-semibold text-peer-paper">{recentGatherings.length}회</p>
           </div>
           <div class="rounded-[20px] border border-white/10 bg-white/10 p-4">
@@ -327,16 +337,8 @@
           {:else if !session}
             <div class="surface-panel-muted space-y-3 text-center">
               <p class="text-sm font-medium text-peer-copy">
-                로그인하고 동료에게 추천서를 남겨보세요.
+                추천 작성은 Peer Connect 멤버만 가능합니다.
               </p>
-              <div class="flex justify-center">
-                <a
-                  class="btn btn-primary"
-                  href={`/auth/login?next=${encodeURIComponent($page.url.pathname)}`}
-                >
-                  로그인하기
-                </a>
-              </div>
             </div>
           {:else}
             <form method="post" action="?/endorse" class="space-y-4" onsubmit={handleEndorseSubmit}>
@@ -444,33 +446,37 @@
             <h2 class="text-2xl">연락처</h2>
           </div>
 
-          {#if contactItems.length > 0}
-            <ul class="space-y-3">
-              {#each contactItems as item}
-                <li>
-                  <a
-                    class="surface-panel-muted flex flex-col gap-1 no-underline transition hover:border-peer-stoneDark hover:bg-white"
-                    href={item.href}
-                    target={item.external ? '_blank' : undefined}
-                    rel={item.external ? 'noopener noreferrer' : undefined}
-                  >
-                    <span class="meta-line">{item.label}</span>
-                    <span class="break-all text-sm font-medium text-peer-copy">{item.value}</span>
-                  </a>
-                </li>
-              {/each}
-            </ul>
+          {#if canViewContact}
+            {#if contactItems.length > 0}
+              <ul class="space-y-3">
+                {#each contactItems as item}
+                  <li>
+                    <a
+                      class="surface-panel-muted flex flex-col gap-1 no-underline transition hover:border-peer-stoneDark hover:bg-white"
+                      href={item.href}
+                      target={item.external ? '_blank' : undefined}
+                      rel={item.external ? 'noopener noreferrer' : undefined}
+                    >
+                      <span class="meta-line">{item.label}</span>
+                      <span class="break-all text-sm font-medium text-peer-copy">{item.value}</span>
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <div class="empty-panel">공개된 연락처가 아직 없습니다.</div>
+            {/if}
           {:else}
-            <div class="empty-panel">공개된 연락처가 아직 없습니다.</div>
+            <div class="empty-panel">연락처는 Peer Connect 멤버에게만 공개됩니다.</div>
           {/if}
         </aside>
 
         <aside class="section-shell space-y-4">
           <div class="flex items-center gap-2 text-peer-amber">
             <Sparkles class="h-4 w-4" />
-            <p class="meta-line text-peer-amber">최근 활동</p>
+            <p class="meta-line text-peer-amber">최근 개설한 모임</p>
           </div>
-          <h2 class="text-2xl">최근 활동</h2>
+          <h2 class="text-2xl">최근 개설한 모임</h2>
           {#if recentGatherings.length > 0}
             <ul class="space-y-3">
               {#each recentGatherings as gathering}
@@ -491,7 +497,7 @@
               {/each}
             </ul>
           {:else}
-            <div class="empty-panel">최근 활동이 아직 없습니다.</div>
+            <div class="empty-panel">최근 개설한 모임이 아직 없습니다.</div>
           {/if}
         </aside>
 
@@ -506,7 +512,7 @@
               <p class="text-2xl font-semibold text-peer-ink">{endorsementCount}개</p>
             </div>
             <div class="surface-panel-muted space-y-2">
-              <p class="meta-line">최근 모임</p>
+              <p class="meta-line">최근 개설한 모임</p>
               <p class="text-2xl font-semibold text-peer-ink">{recentGatherings.length}회</p>
             </div>
             <div class="surface-panel-muted space-y-2">

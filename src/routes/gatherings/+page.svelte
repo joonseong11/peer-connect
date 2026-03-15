@@ -152,14 +152,11 @@
     '전체',
     ...new Set(enrichedPosts.map((post: EnrichedPost) => post.format))
   ] as const;
-  const allStatuses = ['전체', '모집 중', '대화 시작', '회고 공유'] as const;
 
   type FormatFilter = (typeof allFormats)[number];
-  type StatusFilter = (typeof allStatuses)[number];
 
   let searchQuery = $state('');
   let selectedFormat = $state<FormatFilter>('전체');
-  let selectedStatus = $state<StatusFilter>('전체');
 
   const filteredPosts = $derived(
     enrichedPosts.filter((post: EnrichedPost) => {
@@ -167,9 +164,8 @@
         .toLowerCase()
         .includes(searchQuery.trim().toLowerCase());
       const matchesFormat = selectedFormat === '전체' || post.format === selectedFormat;
-      const matchesStatus = selectedStatus === '전체' || post.status === selectedStatus;
 
-      return matchesSearch && matchesFormat && matchesStatus;
+      return matchesSearch && matchesFormat;
     })
   );
 
@@ -375,8 +371,8 @@
             지금 열려 있는 흐름
           </h2>
           <p class="max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-            형식과 상태를 기준으로 라운지를 빠르게 탐색해보세요. 마음에 드는 흐름이 없다면 직접
-            새로운 모임을 열 수도 있습니다.
+            검색과 형식을 기준으로 라운지를 빠르게 둘러보세요. 마음에 드는 흐름이 없다면 직접 새로운
+            모임을 열 수도 있습니다.
           </p>
         </div>
         <a
@@ -388,7 +384,7 @@
         </a>
       </div>
 
-      <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+      <div>
         <label
           class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
         >
@@ -401,22 +397,6 @@
             class="w-full bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
           />
         </label>
-
-        <div class="flex flex-wrap gap-2">
-          {#each allStatuses as status}
-            <button
-              type="button"
-              class={`rounded-full px-3 py-2 text-xs font-semibold transition ${
-                selectedStatus === status
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-              onclick={() => (selectedStatus = status)}
-            >
-              {status}
-            </button>
-          {/each}
-        </div>
       </div>
 
       <div class="flex flex-wrap gap-2">
