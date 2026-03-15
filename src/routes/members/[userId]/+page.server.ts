@@ -80,6 +80,17 @@ export const load: PageServerLoad = async ({ locals, params, url, cookies }) => 
     console.error('Failed to load endorsements', endorsementsError);
   }
 
+  const { data: recentGatherings, error: recentGatheringsError } = await locals.supabase
+    .from('gatherings')
+    .select('id, title, created_at')
+    .eq('author_id', targetUserId)
+    .order('created_at', { ascending: false })
+    .limit(3);
+
+  if (recentGatheringsError) {
+    console.error('Failed to load recent gatherings for member profile', recentGatheringsError);
+  }
+
   let existingEndorsement: { id: string } | null = null;
 
   if (session) {
@@ -108,9 +119,13 @@ export const load: PageServerLoad = async ({ locals, params, url, cookies }) => 
     session,
     profile,
     endorsements: endorsements ?? [],
+    recentGatherings: recentGatherings ?? [],
     existingEndorsementId: existingEndorsement?.id ?? null,
     statusMessage,
-    loadError: endorsementsError ? '동료 추천 정보를 모두 불러오지 못했습니다.' : null
+    loadError:
+      endorsementsError || recentGatheringsError
+        ? '프로필의 일부 정보를 불러오지 못했습니다.'
+        : null
   };
 };
 

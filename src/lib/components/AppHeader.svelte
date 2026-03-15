@@ -2,18 +2,32 @@
   import type { Session } from '@supabase/supabase-js';
   import { page } from '$app/stores';
   import { derived } from 'svelte/store';
-  import { LogOut, UserRound } from 'lucide-svelte';
+  import { ArrowUpRight, LayoutGrid, LogOut, UserRound } from 'lucide-svelte';
 
-  const { session } = $props<{ session: Session | null }>();
+  const { session, invitesEnabled = false } = $props<{
+    session: Session | null;
+    invitesEnabled?: boolean;
+  }>();
 
   const authedNavItems = [
-    { href: '/members', label: '멤버' },
-    { href: '/gatherings', label: '모임 라운지' }
+    { href: '/', label: '홈', match: (path: string) => path === '/' },
+    { href: '/members', label: '멤버', match: (path: string) => path.startsWith('/members') },
+    { href: '/gatherings', label: '모임', match: (path: string) => path.startsWith('/gatherings') },
+    ...(invitesEnabled
+      ? [{ href: '/invite', label: '초대', match: (path: string) => path.startsWith('/invite') }]
+      : []),
+    {
+      href: '/mypage',
+      label: '내 활동',
+      match: (path: string) => path.startsWith('/mypage') || path.startsWith('/profile')
+    }
   ];
 
   const guestNavItems = [
-    { href: '/#features', label: '소개' },
-    { href: '/#gatherings', label: '모임 라운지' }
+    { href: '/#why-peer-connect', label: '왜 Peer Connect인가' },
+    { href: '/#members-preview', label: '멤버' },
+    { href: '/#gatherings-preview', label: '모임' },
+    { href: '/#invitation-model', label: '운영 방식' }
   ];
 
   const loginActionStore = derived(page, ($page) => {
@@ -29,68 +43,85 @@
   });
 </script>
 
-<header class="sticky top-0 z-20 border-b border-slate-200/60 bg-white/90 backdrop-blur-xl">
-  <div
-    class="mx-auto flex w-full max-w-5xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-8"
-  >
-    <div
-      class="flex w-full whitespace-nowrap items-center justify-between gap-3 sm:flex-row sm:items-center sm:gap-6"
-    >
+<header class="sticky top-0 z-20 border-b border-peer-stone/90 bg-peer-paper/90 backdrop-blur-xl">
+  <div class="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-4 sm:px-8 lg:px-10">
+    <a class="min-w-0 shrink-0 text-peer-ink no-underline" href="/">
       <div class="flex items-center gap-3">
-        <a class="text-lg font-bold text-peer-navy" href="/">Peer Connect</a>
-        <nav class="flex items-center gap-1 text-sm font-semibold text-slate-600">
-          {#if session}
-            {#each authedNavItems as item}
-              <a
-                href={item.href}
-                class={`rounded-full px-2 py-1 transition hover:text-peer-indigo  ${
-                  $page.url.pathname.startsWith(item.href) ? 'text-peer-indigo' : ''
-                }`}
-              >
-                {item.label}
-              </a>
-            {/each}
-          {:else}
-            {#each guestNavItems as item}
-              <a href={item.href} class="rounded-full px-2 py-1 transition hover:text-peer-indigo">
-                {item.label}
-              </a>
-            {/each}
-          {/if}
-        </nav>
+        <span
+          class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-peer-ink text-sm font-semibold text-peer-paper"
+        >
+          PC
+        </span>
+        <div class="hidden min-w-0 sm:block">
+          <p class="font-display text-lg font-semibold tracking-[-0.01em] text-peer-ink">
+            Peer Connect
+          </p>
+          <p class="text-[11px] uppercase tracking-[0.18em] text-peer-copyMuted">
+            초대 기반 개발자 네트워크
+          </p>
+        </div>
       </div>
+    </a>
 
-      <div
-        class="flex w-full items-center gap-1 sm:w-auto sm:flex-row sm:items-center justify-end sm:gap-4"
-      >
-        {#if session}
-          <span class="text-sm text-peer-navy sm:whitespace-nowrap hidden sm:block">
-            <strong>{session.user.email}</strong>님, 환영합니다.
-          </span>
+    <nav class="hidden flex-1 items-center justify-center gap-2 lg:flex">
+      {#if session}
+        {#each authedNavItems as item}
           <a
-            class="inline-flex items-center justify-center rounded-full p-2 text-slate-600 transition hover:bg-slate-100 hover:text-peer-indigo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-peer-indigo/60 focus-visible:ring-offset-2"
-            href="/mypage"
-            title="마이페이지"
+            href={item.href}
+            class={`rounded-full px-4 py-2 text-sm font-medium transition ${
+              item.match($page.url.pathname)
+                ? 'bg-white text-peer-ink shadow-panel'
+                : 'text-peer-copySoft hover:bg-white/70 hover:text-peer-ink'
+            }`}
           >
-            <UserRound class="h-5 w-5" />
+            {item.label}
           </a>
-          <form method="post" action="/auth/signout" class="m-0">
-            <button
-              type="submit"
-              class="inline-flex items-center justify-center rounded-full p-2 text-slate-600 transition hover:bg-slate-100 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/60 focus-visible:ring-offset-2"
-              title="로그아웃"
-            >
-              <LogOut class="h-5 w-5" />
-            </button>
-          </form>
-        {:else}
-          <form method="post" action={$loginActionStore} class="m-0">
-            <button type="submit" class="sm:btn sm:btn-primary text-sm font-semibold text-slate-600"
-              >로그인</button
-            >
-          </form>
-        {/if}
-      </div>
+        {/each}
+      {:else}
+        {#each guestNavItems as item}
+          <a
+            href={item.href}
+            class="rounded-full px-4 py-2 text-sm font-medium text-peer-copySoft transition hover:bg-white/70 hover:text-peer-ink"
+          >
+            {item.label}
+          </a>
+        {/each}
+      {/if}
+    </nav>
+
+    <div class="ml-auto flex items-center gap-2 sm:gap-3">
+      {#if session}
+        <a
+          class="hidden items-center gap-2 rounded-full border border-peer-stone bg-white px-4 py-2 text-sm font-medium text-peer-copy shadow-panel transition hover:border-peer-stoneDark hover:text-peer-ink md:inline-flex"
+          href="/mypage"
+        >
+          <LayoutGrid class="h-4 w-4" />
+          <span>내 활동</span>
+        </a>
+        <a
+          class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-peer-stone bg-white text-peer-copy shadow-panel transition hover:border-peer-stoneDark hover:text-peer-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-peer-forest/10"
+          href="/mypage"
+          title="내 프로필과 활동"
+        >
+          <UserRound class="h-4 w-4" />
+        </a>
+        <form method="post" action="/auth/signout" class="m-0">
+          <button
+            type="submit"
+            class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-peer-stone bg-white text-peer-copy shadow-panel transition hover:border-peer-danger hover:text-peer-danger focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-peer-danger/10"
+            title="로그아웃"
+          >
+            <LogOut class="h-4 w-4" />
+          </button>
+        </form>
+      {:else}
+        <form method="post" action={$loginActionStore} class="m-0">
+          <button type="submit" class="btn btn-primary px-4 sm:px-5">
+            <span>Google로 시작하기</span>
+            <ArrowUpRight class="h-4 w-4" />
+          </button>
+        </form>
+      {/if}
     </div>
   </div>
 </header>

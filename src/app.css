@@ -5,32 +5,45 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --peer-page-gradient:
+      radial-gradient(circle at top left, rgba(198, 124, 46, 0.1), transparent 34%),
+      radial-gradient(circle at top right, rgba(31, 107, 87, 0.09), transparent 36%),
+      linear-gradient(180deg, #fffdf8 0%, #faf7f1 58%, #f3ede2 100%);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply m-0 min-h-screen bg-peer-body bg-fixed bg-[length:100vw_100vh] font-sans text-peer-slate antialiased;
+    @apply m-0 min-h-screen bg-peer-paper font-sans text-peer-copy antialiased;
+    background-image: var(--peer-page-gradient);
   }
 
   h1,
   h2,
   h3,
   h4 {
-    @apply font-bold text-peer-navy;
+    @apply font-display font-semibold tracking-normal text-peer-ink;
   }
 
   p {
-    @apply leading-relaxed;
+    @apply leading-7;
   }
 
   a {
-    @apply text-peer-indigo no-underline transition;
+    @apply text-peer-forest no-underline transition-colors duration-150;
   }
 
   pre {
-    @apply overflow-x-auto rounded-md bg-white/60 p-4 font-mono text-base text-peer-slate shadow;
+    @apply overflow-x-auto rounded-xl border border-peer-stone bg-white p-4 font-mono text-sm text-peer-copy shadow-panel;
   }
 
   input,
   button,
-  textarea {
+  textarea,
+  select {
     font: inherit;
   }
 
@@ -53,46 +66,108 @@
 
 @layer components {
   .glass-panel {
-    @apply rounded-3xl border border-slate-200/60 bg-white/90 p-6 sm:p-10 shadow-glass backdrop-blur-2xl;
+    @apply rounded-[28px] border border-peer-stone bg-white p-6 shadow-panel sm:p-8;
   }
 
   .glass-panel-lg {
-    @apply rounded-3xl border border-slate-200/60 bg-white/90 p-6 sm:p-10 shadow-glassLg backdrop-blur-2xl;
+    @apply rounded-[28px] border border-peer-stone bg-white p-8 shadow-panelLg sm:p-10;
   }
 
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-peer-indigo/60 focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition duration-150 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-0;
   }
 
   .btn-primary {
-    @apply bg-gradient-to-br from-peer-sky to-peer-indigo text-peer-navy shadow-[0_12px_30px_rgba(148,163,184,0.35)] hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(99,102,241,0.35)];
+    @apply bg-peer-forest text-peer-paper shadow-button hover:bg-peer-forestDark focus-visible:ring-peer-forest/15;
   }
 
   .btn-secondary {
-    @apply border border-slate-300/70 bg-transparent text-slate-800 hover:-translate-y-0.5 hover:border-slate-400;
+    @apply border border-peer-stone bg-white text-peer-copy hover:border-peer-stoneDark hover:bg-peer-paperAlt focus-visible:ring-peer-forest/10;
   }
 
   .btn-ghost {
-    @apply border border-slate-200/60 bg-slate-50/90 text-peer-navy;
+    @apply border border-transparent bg-peer-paperAlt text-peer-ink hover:bg-white focus-visible:ring-peer-forest/10;
   }
 
   .btn-requires-auth {
-    @apply border border-dashed border-slate-400/70 bg-slate-200/40;
+    @apply border border-dashed border-peer-stoneDark bg-peer-paperAlt text-peer-copySoft;
   }
 
   .badge-accent {
-    @apply inline-flex items-center rounded-xl bg-rose-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-widest text-rose-500;
+    @apply inline-flex items-center rounded-full bg-peer-amberSoft px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-peer-amber;
   }
 
   .badge-step {
-    @apply flex items-center min-w-7 min-h-7 rounded-full bg-peer-indigo/10 justify-center text-base font-bold text-indigo-600;
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-full bg-peer-paperAlt text-sm font-bold text-peer-forest;
   }
 
   .preview-card {
-    @apply flex max-w-xs flex-col gap-3 rounded-3xl border border-sky-200/60 bg-sky-50/90 p-8 text-slate-800;
+    @apply flex max-w-sm flex-col gap-4 rounded-[28px] border border-white/10 bg-peer-ink p-6 text-peer-paper shadow-panelLg;
   }
 
   .comment-bubble {
-    @apply rounded-2xl border border-indigo-200/70 bg-indigo-50/70 p-4 text-indigo-900;
+    @apply rounded-[20px] border border-peer-stone bg-peer-paperAlt p-4 text-peer-copy;
+  }
+
+  .page-shell {
+    @apply mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pb-20 pt-10 sm:px-8 lg:gap-12 lg:px-10;
+  }
+
+  .section-shell {
+    @apply rounded-[28px] border border-peer-stone bg-white p-6 shadow-panel sm:p-8;
+  }
+
+  .surface-panel {
+    @apply rounded-[20px] border border-peer-stone bg-white p-5 shadow-panel;
+  }
+
+  .surface-panel-muted {
+    @apply rounded-[20px] border border-peer-stone bg-peer-paperAlt p-5;
+  }
+
+  .surface-panel-strong {
+    @apply rounded-[28px] bg-peer-ink p-6 text-peer-paper shadow-panelLg sm:p-8;
+  }
+
+  .section-kicker {
+    @apply text-[11px] font-semibold uppercase tracking-[0.24em] text-peer-copyMuted;
+  }
+
+  .section-title {
+    @apply font-display text-3xl font-semibold tracking-normal text-peer-ink sm:text-4xl;
+  }
+
+  .headline-balance {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+
+  .section-copy {
+    @apply text-base leading-7 text-peer-copySoft;
+  }
+
+  .meta-line {
+    @apply text-xs font-medium uppercase tracking-[0.16em] text-peer-copyMuted;
+  }
+
+  .stat-chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-peer-stone bg-white px-4 py-2 text-sm font-medium text-peer-copy;
+  }
+
+  .tag-pill {
+    @apply inline-flex items-center rounded-full border border-peer-stone bg-peer-paperAlt px-3 py-1 text-xs font-medium text-peer-copySoft;
+  }
+
+  .field-shell {
+    @apply w-full rounded-[14px] border border-peer-stone bg-white px-4 py-3 text-sm text-peer-copy transition duration-150 focus:border-peer-forest focus:outline-none focus:ring-4 focus:ring-peer-forest/10;
+  }
+
+  .empty-panel {
+    @apply rounded-[20px] border border-dashed border-peer-stoneDark bg-peer-paperAlt p-6 text-center text-peer-copySoft;
+  }
+
+  .directory-row {
+    @apply block rounded-[20px] border border-peer-stone bg-white p-5 shadow-panel transition duration-150 hover:border-peer-stoneDark hover:bg-peer-paperAlt;
   }
 }

@@ -3,84 +3,81 @@
   import { onDestroy } from 'svelte';
   import { createBrowserClient } from '@supabase/ssr';
   import type { Session, SupabaseClient } from '@supabase/supabase-js';
+  import { ArrowRight, CalendarDays, Plus, Sparkles, UserRound, Users } from 'lucide-svelte';
   import MetaTags from '$lib/components/MetaTags.svelte';
   import { getSupabaseConfig } from '$lib/supabase/config';
 
-  const featureHighlights = [
+  const trustSignals = [
+    { value: 'Invite only', label: '초대 기반 운영' },
+    { value: 'Profiles', label: '프로필 중심 신뢰' },
+    { value: 'Endorsements', label: '추천으로 쌓는 맥락' },
+    { value: '모임으로 연결', label: '교류가 이어지는 모임' }
+  ];
+
+  const featuredMembers = [
     {
-      title: '프라이빗 초대',
-      description:
-        '멤버마다 2장의 초대장을 사용하여 신뢰받는 동료 개발자들을 네트워크에 초대할 수 있습니다.'
+      name: '김소연',
+      role: '플랫폼 엔지니어',
+      tags: ['백엔드', '인프라', '멘토링'],
+      highlight: '대규모 전환 경험을 팀의 언어로 풀어내는 동료'
     },
     {
-      title: '믿을 수 있는 동료의 프로필',
-      description:
-        '직군, 커리어, 프로젝트 경험과 성장 스토리를 담아 나를 입체적으로 소개하세요. 함께했던 동료들의 추천서까지 확인할 수 있습니다.'
+      name: '박진우',
+      role: '프론트엔드 엔지니어',
+      tags: ['디자인 시스템', 'Svelte', '접근성'],
+      highlight: '구조와 경험을 함께 보는 구현 중심 메이커'
     },
     {
-      title: '당신과 함께 성장하는 모임',
-      description:
-        '커피챗, 모각코, 라이트닝 토크, 세미나, 스터디그룹, 사이드프로젝트, 해커톤, 컨퍼런스 등 누구나 다양한 모임을 만들고 교류할 수 있습니다.'
+      name: '최다은',
+      role: '머신러닝 엔지니어',
+      tags: ['LLM', 'MLOps', '실험'],
+      highlight: '실험을 빠르게 설계하고 제품으로 연결하는 사람'
+    }
+  ];
+
+  const featuredGatherings = [
+    {
+      format: '스터디',
+      title: 'LLM 프롬프트 엔지니어링 스터디',
+      host: '박진우 · 프론트엔드 엔지니어',
+      summary: '실서비스에서 쓰는 프롬프트 패턴과 평가 방식을 함께 정리합니다.'
+    },
+    {
+      format: '커피챗',
+      title: '주니어에서 시니어로 넘어가는 설계 감각 이야기',
+      host: '김소연 · 플랫폼 엔지니어',
+      summary: '실패했던 설계와 다시 선택할 기준을 가볍게 나눕니다.'
     }
   ];
 
   const inviteFlow = [
     {
-      label: '1',
-      title: '초대장 발급',
-      copy: '신뢰하는 동료를 초대하세요.'
+      label: '01',
+      title: '초대로 시작',
+      copy: '누구나가 아니라 신뢰하는 동료로 네트워크의 기본선을 맞춥니다.'
     },
     {
-      label: '2',
-      title: '추천서 남기기',
-      copy: '프로필을 작성하고 동료들에게 추천서를 남겨보세요.'
+      label: '02',
+      title: '프로필과 추천',
+      copy: '단순 소개가 아니라 협업 맥락과 추천으로 신뢰를 쌓습니다.'
     },
     {
-      label: '3',
-      title: '동료들과 교류하기',
-      copy: '다양한 모임을 만들고 참여해보세요.'
+      label: '03',
+      title: '모임으로 확장',
+      copy: '가벼운 커피챗부터 깊은 스터디까지 관계를 실제 대화로 이어갑니다.'
     }
-  ];
-
-  const defaultAvatar = '/images/default-profile.svg';
-
-  const sampleProfile = {
-    name: '김박사',
-    role: 'Senior Backend Engineer · 5년차',
-    intro:
-      '대규모 데이터 파이프라인과 DevOps 문화를 사랑합니다. 실험을 빠르게 반복하고 팀이 성장할 수 있도록 돕는 일을 즐겨요.',
-    career: [
-      '토스 · Platform Squad (2024-현재)',
-      '네이버 · Search Infra (2020-2024)',
-      'KAIST 전산학부 졸업'
-    ],
-    photo: defaultAvatar
-  };
-
-  const endorsements = [
-    {
-      author: '홍길동 · Product Engineer',
-      message:
-        '함께 모놀리스를 마이크로서비스로 분리할 때, 소연님의 리딩 덕분에 전환 기간을 절반으로 줄일 수 있었어요.'
-    },
-    {
-      author: '고길동 · ML Engineer',
-      message: '복잡한 요구사항도 명확하게 정리해주는 커뮤니케이션 능력이 탁월합니다.'
-    }
-  ];
-
-  const boardIdeas = [
-    '아침 30분 데일리 테크 스탠드업',
-    'LLM 프롬프트 엔지니어링 스터디',
-    'Kubernetes 실전 워크숍',
-    '사이드 프로젝트 파트너 매칭',
-    '월간 멘토링 세션'
   ];
 
   const { data } = $props<{ data: App.PageData }>();
 
   let localSession = $state(data.session);
   const session = $derived(localSession);
+  const homeData = $derived(data.homeData ?? null);
+  const recentMembers = $derived(homeData?.recentMembers ?? []);
+  const recentGatherings = $derived(homeData?.recentGatherings ?? []);
+  const nextAction = $derived(homeData?.nextAction ?? null);
+  const profileSummary = $derived(homeData?.summary ?? null);
+  const profileCard = $derived(homeData?.profile ?? null);
   let authError = $state<string | null>(data.authErrorMessage ?? null);
   let supabase: SupabaseClient | null = null;
   const invitesEnabled = $derived(data.invitesEnabled ?? false);
@@ -89,6 +86,7 @@
   let acknowledgeSubmittingIntent = $state<string | null>(null);
   let lastPromptId = $state<string | null>(null);
 
+  const defaultAvatar = '/images/default-profile.svg';
   const metaDescription =
     '초대 기반 프라이빗 개발자 네트워크, Peer Connect에서 깊이 있는 동료와 함께 성장하세요.';
 
@@ -145,7 +143,6 @@
     }
 
     const ensuredClient = client as SupabaseClient;
-
     const nextParam = authRedirectTarget ? `?next=${encodeURIComponent(authRedirectTarget)}` : '';
 
     const { error } = await ensuredClient.auth.signInWithOAuth({
@@ -165,6 +162,14 @@
     const submitter = event.submitter as HTMLButtonElement | null;
     acknowledgeSubmittingIntent = submitter?.value ?? null;
   };
+
+  const formatDate = (value: string | null | undefined) =>
+    value
+      ? new Date(value).toLocaleDateString('ko-KR', {
+          month: 'short',
+          day: 'numeric'
+        })
+      : '최근 업데이트 없음';
 </script>
 
 <MetaTags
@@ -174,222 +179,464 @@
   type="website"
 />
 
-<main class="mx-auto flex w-full max-w-5xl flex-col gap-14 px-4 pb-20 pt-16 sm:px-8 lg:gap-16">
-  <section id="intro" class="glass-panel grid gap-10 md:grid-cols-2 md:items-center lg:p-12">
-    <div class="space-y-5">
-      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">PEER CONNECT</p>
-      <h1 class="text-3xl leading-tight text-peer-navy sm:text-4xl">
-        당신과 함께 성장하는<br />프라이빗 네트워크
-      </h1>
-      <p class="max-w-xl text-base text-slate-600 sm:text-lg">
-        혼자서는 정보도 기회도 놓치기 쉽습니다. <br />지금, 동료들과 연결되어 새로운 가능성을
-        여세요. <br />함께 성장할 때, 배움은 더 빠르고 길도 더 선명해집니다.<br /><br />
-        믿을 수 있는 동료들과 함께 성장하세요. <br />간단한 식사 자리와 같은 밋업부터 세미나와 같은
-        기술적인 토론까지 동료들과 교류할 수 있습니다.
-      </p>
-      <div class="flex flex-wrap items-center gap-3 pt-2">
-        {#if session}
-          <a class="btn btn-primary" href="/profile">내 프로필 관리</a>
-          <a class="btn btn-secondary" href="/members">동료 프로필 둘러보기</a>
-        {:else}
-          <button class="btn btn-primary" onclick={handleGoogleSignIn}
-            >Google 계정으로 시작하기</button
+<main class="page-shell">
+  {#if session}
+    <section class="surface-panel-strong grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
+      <div class="space-y-5">
+        <p class="section-kicker text-peer-paper/70">오늘의 Peer Connect</p>
+        <div class="space-y-3">
+          <h1
+            class="headline-balance max-w-3xl text-4xl leading-[1.05] text-peer-paper sm:text-5xl"
           >
-          <a class="btn btn-secondary" href="#features">서비스 소개 보기</a>
-        {/if}
-      </div>
-      {#if authError}
-        <p class="text-sm font-medium text-rose-400" role="alert">{authError}</p>
-      {/if}
-    </div>
-    <div class="flex justify-center md:justify-end">
-      <div class="preview-card md:ml-auto">
-        <span class="text-xs font-semibold uppercase tracking-[0.08em] text-rose-500"
-          >멤버 지수</span
-        >
-        <p class="text-lg font-semibold text-slate-800">새로운 추천서 도착</p>
-        <p class="text-sm leading-relaxed text-slate-600">
-          “네트워크 인프라 전환 프로젝트에서 빠르게 학습하고 팀에 기여한 모습이 인상적이었어요.”
-        </p>
-        <div class="flex justify-between text-xs text-slate-500">
-          <span>작성: 팀 리더</span>
-          <span>방금 전</span>
+            오늘의 네트워크를 확인해보세요
+          </h1>
+          <p class="max-w-2xl text-base leading-7 text-peer-paper/75 sm:text-lg">
+            새로운 추천, 새로 열린 모임, 아직 끝내지 않은 프로필 작업까지 지금 필요한 흐름만
+            모았습니다.
+          </p>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <section id="features" class="grid gap-6 md:grid-cols-3">
-    {#each featureHighlights as feature}
-      <article class="glass-panel space-y-3 p-8 sm:p-9">
-        <h3 class="text-xl font-semibold text-peer-navy">{feature.title}</h3>
-        <p class="text-slate-600">{feature.description}</p>
-      </article>
-    {/each}
-  </section>
-
-  <section class="glass-panel space-y-6">
-    <h2 class="text-3xl font-semibold text-peer-navy">초대 기반으로 더 단단하게 연결돼요</h2>
-    <div class="grid gap-6 sm:grid-cols-3">
-      {#each inviteFlow as step}
-        <div class="flex items-start gap-4">
-          <span class="badge-step">{step.label}</span>
-          <div class="space-y-1.5">
-            <h3 class="text-lg font-semibold text-peer-navy">{step.title}</h3>
-            <p class="text-slate-600">{step.copy}</p>
+        <div class="flex flex-wrap gap-3">
+          <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
+            받은 추천 {profileSummary?.endorsementCount ?? 0}개
+          </div>
+          <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
+            최근 열린 모임 {profileSummary?.recentGatheringCount ?? 0}개
+          </div>
+          <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
+            프로필 완성도 {profileSummary?.profileCompletion ?? 0}%
           </div>
         </div>
-      {/each}
-    </div>
-  </section>
 
-  <section id="profiles" class="glass-panel grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-    <div class="space-y-4">
-      <h2 class="text-3xl font-semibold text-peer-navy">나를 보여주는 프로필</h2>
-      <p class="text-slate-600">
-        기술 스택과 커리어 히스토리, 프로젝트 경험, 관심분야 등 자기소개를 자유롭게 작성하고,
-        동료들에게 추천서를 남겨보세요. 프로필은 초대받은 PEER CONNECT 멤버들에게 공개됩니다.
-      </p>
-      {#if session}
-        <a class="btn btn-ghost" href="/profile">내 프로필 작성하기</a>
-      {:else}
-        <button
-          class="btn btn-ghost btn-requires-auth"
-          type="button"
-          onclick={handleGoogleSignIn}
-          title="Google 로그인 후 프로필을 작성할 수 있어요."
-        >
-          Google 로그인 후 시작
-        </button>
-      {/if}
-      {#if !session}
-        <p class="text-sm text-slate-500">지금 Google로 로그인하고 내 프로필을 작성해보세요.</p>
-      {/if}
-    </div>
-    <div
-      class="rounded-3xl border border-slate-200/60 bg-white/80 p-4 shadow-lg backdrop-blur-xl sm:p-9"
-    >
-      <header class="space-y-1">
-        <h3 class="text-2xl font-semibold text-peer-navy">{sampleProfile.name}</h3>
-        <p class="text-sm text-slate-500">{sampleProfile.role}</p>
-      </header>
-      <img
-        class="mt-6 h-24 w-24 rounded-full border-2 border-slate-300/60 bg-slate-50 object-cover"
-        src={sampleProfile.photo}
-        alt={`${sampleProfile.name} 프로필 이미지`}
-      />
-      <section class="mt-6 space-y-2">
-        <h4 class="text-lg font-semibold text-peer-navy">소개</h4>
-        <p class="text-slate-600">{sampleProfile.intro}</p>
-      </section>
-      <section class="mt-6 space-y-3">
-        <h4 class="text-lg font-semibold text-peer-navy">커리어</h4>
-        <ul class="space-y-2">
-          {#each sampleProfile.career as item}
-            <li
-              class="relative pl-5 text-slate-600 before:absolute before:left-0 before:top-2 before:h-2 before:w-2 before:rounded-full before:bg-gradient-to-br before:from-peer-sky before:to-peer-indigo before:content-['']"
-            >
-              {item}
-            </li>
-          {/each}
-        </ul>
-      </section>
-      <section class="mt-6 space-y-3">
-        <h4 class="text-lg font-semibold text-peer-navy">동료 추천</h4>
-        <div class="flex flex-col gap-3">
-          {#each endorsements as endorsement}
-            <article
-              class="rounded-2xl border border-indigo-200/70 bg-indigo-50/70 p-4 text-indigo-900 shadow-sm"
-            >
-              <p class="text-sm leading-relaxed">“{endorsement.message}”</p>
-              <span class="mt-2 block text-xs font-semibold text-indigo-600"
-                >{endorsement.author}</span
-              >
-            </article>
-          {/each}
+        {#if homeData?.homeError}
+          <p
+            class="rounded-[20px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-peer-paper/75"
+          >
+            {homeData.homeError}
+          </p>
+        {/if}
+      </div>
+
+      <div class="space-y-4 rounded-[24px] border border-white/10 bg-white/10 p-5">
+        <p class="meta-line text-peer-paper/60">내 상태 요약</p>
+        <div class="flex items-center gap-4">
+          <img
+            class="h-16 w-16 rounded-[20px] border border-white/10 bg-white/10 object-cover"
+            src={profileCard?.photo_url ?? defaultAvatar}
+            alt="내 프로필 이미지"
+          />
+          <div class="space-y-1">
+            <h2 class="text-2xl text-peer-paper">{profileCard?.full_name ?? '멤버'}</h2>
+            <p class="text-sm text-peer-paper/70">{profileCard?.role}</p>
+          </div>
         </div>
-      </section>
-    </div>
-  </section>
-
-  <section id="gatherings" class="glass-panel grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
-    <div class="space-y-4">
-      <h2 class="text-3xl font-semibold text-peer-navy">모임 라운지</h2>
-      <p class="text-slate-600">
-        커피챗, 모각코, 라이트닝 토크, 세미나, 스터디그룹, 사이드프로젝트, 해커톤, 컨퍼런스 등의
-        다양한 모임을 직접 만들고 참여하세요. 누구나 모임 라운지에 글을 작성하고 수정할 수 있으며, <strong
-          class="font-semibold text-peer-navy"
-          >등록된 글은 알림을 허락한 모든 멤버에게 이메일로 안내됩니다.</strong
-        >
-      </p>
-      <div class="pt-2">
-        {#if session}
-          <a class="btn btn-primary" href="/gatherings">모임 라운지 살펴보기</a>
-        {:else}
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-            <button class="btn btn-primary" type="button" onclick={handleGoogleSignIn}
-              >Google 로그인 후 모임 살펴보기</button
-            >
-            <p class="text-sm text-slate-500 sm:ml-1 sm:mt-0">
-              모임 라운지는 인증된 멤버 전용 공간입니다.
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+          <a
+            class="rounded-[20px] border border-white/10 bg-white/10 p-4 text-peer-paper no-underline transition hover:bg-white/15"
+            href={nextAction?.href ?? '/profile'}
+          >
+            <p class="meta-line text-peer-paper/60">다음 행동</p>
+            <p class="mt-2 text-lg font-semibold">{nextAction?.title}</p>
+            <p class="mt-2 text-sm leading-6 text-peer-paper/70">{nextAction?.description}</p>
+            <span class="mt-4 inline-flex items-center gap-2 text-sm font-semibold">
+              {nextAction?.ctaLabel}
+              <ArrowRight class="h-4 w-4" />
+            </span>
+          </a>
+          <div class="rounded-[20px] border border-white/10 bg-white/10 p-4">
+            <p class="meta-line text-peer-paper/60">최근 업데이트</p>
+            <p class="mt-2 text-lg font-semibold text-peer-paper">
+              {formatDate(profileCard?.updated_at)}
+            </p>
+            <p class="mt-2 text-sm text-peer-paper/70">
+              프로필과 활동 내역을 최신 상태로 유지해보세요.
             </p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-[1.55fr_0.95fr]">
+      <div class="space-y-6">
+        <section class="section-shell space-y-5">
+          <div class="flex flex-wrap items-end justify-between gap-4">
+            <div class="space-y-1">
+              <p class="section-kicker">지금 살펴볼 멤버</p>
+              <h2 class="text-3xl">지금 눈여겨볼 멤버</h2>
+              <p class="section-copy">
+                최근에 프로필을 다듬은 멤버부터 보며 연결의 실마리를 찾아보세요.
+              </p>
+            </div>
+            <a class="btn btn-secondary" href="/members">멤버 더 보기</a>
+          </div>
+
+          {#if recentMembers.length === 0}
+            <div class="empty-panel">아직 둘러볼 멤버 정보가 충분하지 않습니다.</div>
+          {:else}
+            <div class="space-y-3">
+              {#each recentMembers as member}
+                <a
+                  class="surface-panel flex flex-col gap-4 no-underline transition hover:border-peer-stoneDark hover:bg-peer-paperAlt md:flex-row md:items-center"
+                  href={`/members/${member.user_id}`}
+                >
+                  <img
+                    class="h-16 w-16 rounded-[20px] border border-peer-stone bg-peer-paperAlt object-cover"
+                    src={member.photo_url ?? defaultAvatar}
+                    alt={`${member.full_name} 프로필 이미지`}
+                  />
+                  <div class="min-w-0 flex-1 space-y-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <h3 class="text-xl">{member.full_name}</h3>
+                      <span class="tag-pill">{member.role}</span>
+                      {#if member.endorsementCount > 0}
+                        <span class="tag-pill">추천 {member.endorsementCount}개</span>
+                      {/if}
+                    </div>
+                    <p class="text-sm leading-6 text-peer-copySoft">
+                      {member.introduction ||
+                        '소개를 업데이트하며 자신을 더 선명하게 드러내는 중입니다.'}
+                    </p>
+                  </div>
+                  <span
+                    class="inline-flex items-center gap-2 text-sm font-semibold text-peer-forest"
+                  >
+                    프로필 보기
+                    <ArrowRight class="h-4 w-4" />
+                  </span>
+                </a>
+              {/each}
+            </div>
+          {/if}
+        </section>
+
+        <section class="section-shell space-y-5">
+          <div class="flex flex-wrap items-end justify-between gap-4">
+            <div class="space-y-1">
+              <p class="section-kicker">활발한 모임</p>
+              <h2 class="text-3xl">활발한 모임</h2>
+              <p class="section-copy">
+                최근에 열린 대화부터 살펴보며 지금 네트워크 안에서 어떤 흐름이 이어지는지
+                확인해보세요.
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <a class="btn btn-secondary" href="/gatherings">모임 더 보기</a>
+              <a class="btn btn-primary" href="/gatherings/new">
+                <Plus class="h-4 w-4" />
+                <span>모임 열기</span>
+              </a>
+            </div>
+          </div>
+
+          {#if recentGatherings.length === 0}
+            <div class="empty-panel">아직 열린 모임이 없습니다. 첫 모임을 직접 시작해보세요.</div>
+          {:else}
+            <div class="space-y-3">
+              {#each recentGatherings as gathering}
+                <a
+                  class="surface-panel flex flex-col gap-3 no-underline transition hover:border-peer-stoneDark hover:bg-peer-paperAlt"
+                  href={`/gatherings/${gathering.id}`}
+                >
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="tag-pill">모임</span>
+                    <span class="tag-pill">{formatDate(gathering.created_at)}</span>
+                  </div>
+                  <div class="space-y-2">
+                    <h3 class="text-xl">{gathering.title}</h3>
+                    <p class="text-sm leading-6 text-peer-copySoft">{gathering.summary}</p>
+                  </div>
+                  <div
+                    class="flex flex-wrap items-center justify-between gap-3 text-sm text-peer-copySoft"
+                  >
+                    <span>
+                      {gathering.author?.full_name ?? '알 수 없는 멤버'}
+                      {#if gathering.author?.role}
+                        · {gathering.author.role}
+                      {/if}
+                    </span>
+                    <span class="inline-flex items-center gap-2 font-semibold text-peer-forest">
+                      자세히 보기
+                      <ArrowRight class="h-4 w-4" />
+                    </span>
+                  </div>
+                </a>
+              {/each}
+            </div>
+          {/if}
+        </section>
+      </div>
+
+      <div class="space-y-6">
+        <aside class="section-shell space-y-4">
+          <div class="flex items-center gap-2 text-peer-amber">
+            <Sparkles class="h-4 w-4" />
+            <p class="meta-line text-peer-amber">다음 행동</p>
+          </div>
+          <h2 class="text-2xl">{nextAction?.title}</h2>
+          <p class="section-copy">{nextAction?.description}</p>
+          <a class="btn btn-primary w-full" href={nextAction?.href ?? '/profile'}>
+            <span>{nextAction?.ctaLabel ?? '시작하기'}</span>
+            <ArrowRight class="h-4 w-4" />
+          </a>
+        </aside>
+
+        <aside class="section-shell space-y-4">
+          <div class="flex items-center gap-2 text-peer-forest">
+            <Users class="h-4 w-4" />
+            <p class="meta-line text-peer-copyMuted">초대 현황</p>
+          </div>
+          <h2 class="text-2xl">
+            {#if invitesEnabled}
+              신뢰하는 동료를 더 초대할 수 있습니다
+            {:else}
+              초대 기능을 점검 중입니다
+            {/if}
+          </h2>
+          <p class="section-copy">
+            {#if invitesEnabled}
+              초대 링크를 공유하고, 합류한 동료와 추천을 주고받으며 네트워크를 넓혀보세요.
+            {:else}
+              초대 기능이 다시 열리면 여기에서 바로 상태를 확인할 수 있습니다.
+            {/if}
+          </p>
+          <a class="btn btn-secondary w-full" href={invitesEnabled ? '/invite' : '/members'}>
+            {#if invitesEnabled}
+              초대 관리로 이동
+            {:else}
+              멤버 둘러보기
+            {/if}
+          </a>
+        </aside>
+
+        <aside class="section-shell space-y-4">
+          <div class="flex items-center gap-2 text-peer-copy">
+            <UserRound class="h-4 w-4" />
+            <p class="meta-line text-peer-copyMuted">내 활동 요약</p>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <div class="surface-panel-muted space-y-2">
+              <p class="meta-line">프로필 완성도</p>
+              <p class="text-2xl font-semibold text-peer-ink">
+                {profileSummary?.profileCompletion ?? 0}%
+              </p>
+            </div>
+            <div class="surface-panel-muted space-y-2">
+              <p class="meta-line">받은 추천</p>
+              <p class="text-2xl font-semibold text-peer-ink">
+                {profileSummary?.endorsementCount ?? 0}개
+              </p>
+            </div>
+            <div class="surface-panel-muted space-y-2">
+              <p class="meta-line">최근 모임</p>
+              <p class="text-2xl font-semibold text-peer-ink">
+                {profileSummary?.recentGatheringCount ?? 0}개
+              </p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  {:else}
+    <section class="surface-panel-strong grid gap-8 xl:grid-cols-[1.25fr_0.9fr]">
+      <div class="space-y-6">
+        <p class="section-kicker text-peer-paper/70">초대 기반 개발자 네트워크</p>
+        <div class="space-y-4">
+          <h1
+            class="headline-balance max-w-3xl text-4xl leading-[1.02] text-peer-paper sm:text-6xl"
+          >
+            믿을 만한 동료와 더 깊게 연결되는 개발자 네트워크
+          </h1>
+          <p class="max-w-2xl text-base leading-7 text-peer-paper/75 sm:text-lg">
+            Peer Connect는 초대 기반으로 운영되는 프라이빗 네트워크입니다. 프로필, 추천, 모임을 통해
+            서로의 실력과 맥락을 더 정확하게 이해할 수 있습니다.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <button class="btn btn-primary" onclick={handleGoogleSignIn}>
+            <span>Google로 시작하기</span>
+            <ArrowRight class="h-4 w-4" />
+          </button>
+          <a
+            class="btn btn-secondary border-white/15 bg-white/10 text-peer-paper hover:bg-white/15"
+            href="#invitation-model"
+          >
+            어떻게 운영되나요
+          </a>
+        </div>
+        {#if authError}
+          <p
+            class="rounded-[20px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-rose-200"
+            role="alert"
+          >
+            {authError}
+          </p>
         {/if}
       </div>
-    </div>
-    <ul class="grid gap-3">
-      {#each boardIdeas as idea}
-        <li
-          class="rounded-xl border border-emerald-200/60 bg-emerald-100/70 px-4 py-3 font-semibold text-emerald-700"
-        >
-          {idea}
-        </li>
-      {/each}
-    </ul>
-  </section>
 
-  <section class="glass-panel space-y-4 text-center md:text-left">
-    <h2 class="text-3xl font-semibold text-peer-navy">
-      이제 Peer Connect에서 동료와 함께 성장해요
-    </h2>
-    <p class="text-slate-600">초대권을 발급해 신뢰할 수 있는 동료를 초대하세요.</p>
-    <div class="flex flex-wrap justify-center gap-3 pt-2 md:justify-start">
-      {#if session}
-        {#if invitesEnabled}
-          <a class="btn btn-primary" href="/invite">초대권 관리</a>
-          <a class="btn btn-secondary" href="/members">동료 프로필 보기</a>
-        {:else}
-          <a class="btn btn-primary" href="/members">동료 프로필 둘러보기</a>
-          <a class="btn btn-secondary" href="/profile">내 프로필 작성하기</a>
-        {/if}
-      {:else}
-        <div class="flex items-center gap-4">
-          <button class="btn btn-primary" type="button" onclick={handleGoogleSignIn}>
-            <span class="sm:hidden whitespace-nowrap">로그인</span>
-            <span class="hidden sm:inline">Google 로그인하고 시작하기</span>
-          </button>
-          <span class="text-sm text-slate-500"
-            >초대장을 받았다면 로그인 후 가입을 완료할 수 있어요.</span
-          >
+      <div class="grid gap-4">
+        <div class="rounded-[24px] border border-white/10 bg-white/10 p-5">
+          <p class="meta-line text-peer-paper/60">최근 네트워크 신호</p>
+          <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            {#each trustSignals as signal}
+              <div class="rounded-[20px] border border-white/10 bg-white/10 p-4">
+                <p class="text-sm font-medium text-peer-paper/65">{signal.label}</p>
+                <p class="mt-2 text-lg font-semibold text-peer-paper">{signal.value}</p>
+              </div>
+            {/each}
+          </div>
         </div>
-      {/if}
-    </div>
-  </section>
+        <article class="preview-card max-w-none">
+          <p class="meta-line text-peer-paper/60">추천 미리보기</p>
+          <p class="text-lg font-semibold">“복잡한 전환기를 팀의 언어로 정리해주는 동료였어요.”</p>
+          <p class="text-sm leading-6 text-peer-paper/75">
+            실무 경험이 드러나는 추천이 쌓일수록, 새로운 연결도 더 정확해집니다.
+          </p>
+          <div
+            class="flex items-center justify-between text-xs uppercase tracking-[0.16em] text-peer-paper/55"
+          >
+            <span>프로덕트 엔지니어</span>
+            <span>Peer Connect</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="why-peer-connect" class="section-shell space-y-5">
+      <div class="space-y-2">
+        <p class="section-kicker">왜 Peer Connect인가</p>
+        <h2 class="headline-balance text-3xl">더 깊은 연결이 만들어지는 방식</h2>
+        <p class="section-copy">
+          누구나 들어오고 누구도 기억되지 않는 커뮤니티 대신, 신뢰가 쌓이는 방식으로 연결을
+          설계했습니다.
+        </p>
+      </div>
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {#each trustSignals as signal}
+          <article class="surface-panel-muted space-y-2">
+            <p class="meta-line">{signal.label}</p>
+            <p class="text-xl font-semibold text-peer-ink">{signal.value}</p>
+          </article>
+        {/each}
+      </div>
+    </section>
+
+    <section id="members-preview" class="section-shell space-y-5">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div class="space-y-2">
+          <p class="section-kicker">멤버 미리보기</p>
+          <h2 class="headline-balance text-3xl">신뢰를 먼저 읽을 수 있는 멤버 프로필</h2>
+          <p class="section-copy">
+            역할만 적혀 있는 프로필이 아니라, 어떤 문제를 다뤄왔는지와 어떻게 일하는지까지 읽을 수
+            있어야 합니다.
+          </p>
+        </div>
+      </div>
+      <div class="grid gap-4 lg:grid-cols-3">
+        {#each featuredMembers as member}
+          <article class="surface-panel flex h-full flex-col gap-4">
+            <div class="flex items-center gap-3">
+              <div
+                class="inline-flex h-14 w-14 items-center justify-center rounded-[20px] bg-peer-paperAlt text-peer-forest"
+              >
+                <UserRound class="h-6 w-6" />
+              </div>
+              <div>
+                <h3 class="text-xl">{member.name}</h3>
+                <p class="text-sm text-peer-copySoft">{member.role}</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              {#each member.tags as tag}
+                <span class="tag-pill">{tag}</span>
+              {/each}
+            </div>
+            <p class="text-sm leading-6 text-peer-copySoft">{member.highlight}</p>
+          </article>
+        {/each}
+      </div>
+    </section>
+
+    <section id="gatherings-preview" class="section-shell space-y-5">
+      <div class="space-y-2">
+        <p class="section-kicker">모임 라운지</p>
+        <h2 class="headline-balance text-3xl">교류를 실제 대화로 이어주는 모임 라운지</h2>
+        <p class="section-copy">
+          가벼운 커피챗부터 깊은 스터디까지, 지금 시작할 수 있는 대화의 단서를 모아둡니다.
+        </p>
+      </div>
+      <div class="grid gap-4 lg:grid-cols-2">
+        {#each featuredGatherings as gathering}
+          <article class="surface-panel space-y-4">
+            <div class="flex items-center gap-2">
+              <span class="tag-pill">{gathering.format}</span>
+              <span class="tag-pill">모임 라운지</span>
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-2xl">{gathering.title}</h3>
+              <p class="text-sm text-peer-copySoft">{gathering.host}</p>
+            </div>
+            <p class="text-sm leading-6 text-peer-copySoft">{gathering.summary}</p>
+          </article>
+        {/each}
+      </div>
+    </section>
+
+    <section id="invitation-model" class="section-shell space-y-5">
+      <div class="space-y-2">
+        <p class="section-kicker">운영 방식</p>
+        <h2 class="headline-balance text-3xl">누구에게나 열려 있는 커뮤니티는 아닙니다</h2>
+        <p class="section-copy">
+          초대, 프로필, 추천이라는 세 단계가 신뢰의 기본선을 만듭니다. 그래서 더 적은 잡음으로 더
+          깊은 대화를 시작할 수 있습니다.
+        </p>
+      </div>
+      <div class="grid gap-4 lg:grid-cols-3">
+        {#each inviteFlow as step}
+          <article class="surface-panel space-y-4">
+            <div class="flex items-center gap-3">
+              <span class="badge-step">{step.label}</span>
+              <h3 class="text-xl">{step.title}</h3>
+            </div>
+            <p class="text-sm leading-6 text-peer-copySoft">{step.copy}</p>
+          </article>
+        {/each}
+      </div>
+    </section>
+
+    <section class="surface-panel-strong flex flex-col gap-5 text-center sm:text-left">
+      <div class="space-y-3">
+        <p class="section-kicker text-peer-paper/70">지금 시작하기</p>
+        <h2 class="headline-balance text-4xl text-peer-paper">
+          혼자 찾기 어려운 동료를 더 정확하게 만나보세요
+        </h2>
+        <p class="max-w-2xl text-base leading-7 text-peer-paper/75">
+          Peer Connect는 신뢰를 기반으로 대화가 시작되는 개발자 네트워크를 지향합니다.
+        </p>
+      </div>
+      <div class="flex flex-wrap justify-center gap-3 sm:justify-start">
+        <button class="btn btn-primary" type="button" onclick={handleGoogleSignIn}>
+          <span>Peer Connect 시작하기</span>
+          <ArrowRight class="h-4 w-4" />
+        </button>
+      </div>
+    </section>
+  {/if}
 </main>
 
 {#if inviteePrompt}
-  <div class="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/60 px-5">
+  <div class="fixed inset-0 z-30 flex items-center justify-center bg-peer-ink/55 px-5">
     <div
-      class="w-full max-w-lg rounded-3xl border border-slate-200/70 bg-white p-8 text-center shadow-2xl"
+      class="w-full max-w-lg rounded-[28px] border border-peer-stone bg-white p-8 shadow-panelLg"
     >
-      <p class="text-lg font-semibold text-peer-navy">내 초대로 동료가 합류했습니다.</p>
-      <p class="mt-2 text-sm text-slate-600">
+      <p class="section-kicker">새로운 연결</p>
+      <h2 class="mt-2 text-3xl">내 초대로 동료가 합류했습니다</h2>
+      <p class="mt-3 text-base leading-7 text-peer-copySoft">
         {inviteePrompt.inviteeName ?? '새 동료'}님에게 추천서를 남겨보시겠어요?
       </p>
       <form
         method="post"
         action="?/acknowledgeInviteePrompt"
-        class="mt-6 flex flex-wrap items-center justify-center gap-3"
+        class="mt-6 flex flex-wrap items-center gap-3"
         onsubmit={handleAcknowledgeSubmit}
       >
         <input type="hidden" name="redemptionId" value={inviteePrompt.redemptionId} />
@@ -406,25 +653,9 @@
           disabled={acknowledgeSubmittingIntent !== null}
         >
           {#if acknowledgeSubmittingIntent === 'visit'}
-            <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-                fill="none"
-              />
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              />
-            </svg>
-            <span>이동 중…</span>
+            <span>이동 중...</span>
           {:else}
-            예
+            추천 남기러 가기
           {/if}
         </button>
         <button
@@ -435,25 +666,9 @@
           disabled={acknowledgeSubmittingIntent !== null}
         >
           {#if acknowledgeSubmittingIntent === 'dismiss'}
-            <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-                fill="none"
-              />
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              />
-            </svg>
-            <span>처리 중…</span>
+            <span>처리 중...</span>
           {:else}
-            아니오
+            나중에 하기
           {/if}
         </button>
       </form>
