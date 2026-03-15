@@ -150,6 +150,15 @@ describe('/members/[userId]', () => {
         })
       },
       {
+        table: 'gatherings',
+        builder: createQueryBuilder({
+          awaited: {
+            data: [],
+            error: null
+          }
+        })
+      },
+      {
         table: 'endorsements',
         builder: createQueryBuilder({
           maybeSingle: { data: { id: 'mine-1' }, error: null }

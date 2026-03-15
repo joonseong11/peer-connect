@@ -28,6 +28,9 @@ describe('/ home server', () => {
             },
             error: null
           }
+        }),
+        createQueryBuilder({
+          maybeSingle: { data: null, error: null }
         })
       ],
       profiles: [
@@ -75,7 +78,7 @@ describe('/ home server', () => {
         },
         nextAction: {
           title: '프로필을 더 완성해보세요',
-          description: '소개와 커리어를 채우면 더 빠르게 신뢰를 만들 수 있습니다.',
+          description: '기본 정보와 소개를 마무리하면 다른 사람이 나를 더 쉽게 이해할 수 있습니다.',
           href: '/profile',
           ctaLabel: '프로필 보완하기'
         },
