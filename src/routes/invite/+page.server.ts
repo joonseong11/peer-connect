@@ -109,17 +109,27 @@ const buildInviteSlots = (userId: string): InviteSlotDefinition[] => {
 import {
   redeemInviteCode,
   mapRedeemReasonToStatus,
-  normalizeCode,
-  type RedeemResult,
-  type RedeemErrorReason
+  normalizeCode
 } from '$lib/server/invite';
+import {
+  createExternalEndorsementClaim,
+  resolveExternalEndorsementClaimState,
+  revokeExternalEndorsementClaim
+} from '$lib/server/externalEndorsement';
 
-/* ... existing imports ... */
-// Remove duplicated types and helpers that are now in $lib/server/invite
-// but keep local types like InviteSlotDefinition, InviteRedemptionRecord, etc.
-
-const createInviteCode = () => {
-  return crypto.randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase();
+type ExternalEndorsementClaimRecord = {
+  id: string;
+  content: string;
+  authorName: string;
+  createdAt: string;
+  expiresAt: string;
+  state: 'active' | 'claimed' | 'revoked' | 'expired';
+  claimedAt: string | null;
+  revokedAt: string | null;
+  claimedBy: {
+    full_name: string | null;
+    role: string | null;
+  } | null;
 };
 
 const buildStatusMessage = (status: string | null, code: string | null) => {
@@ -142,6 +152,44 @@ const buildStatusMessage = (status: string | null, code: string | null) => {
     return '초대 코드를 처리하지 못했습니다. 잠시 후 다시 시도해주세요.';
   }
   return null;
+};
+
+const fetchExternalClaims = async (locals: App.Locals, userId: string) => {
+  const { data, error } = await locals.supabase
+    .from('external_endorsement_claims')
+    .select(
+      'id, content, author_name_snapshot, status, created_at, expires_at, claimed_at, revoked_at, claimed_by:profiles!external_endorsement_claims_claimed_by_user_id_fkey(full_name, role)'
+    )
+    .eq('author_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to load external endorsement claims', error);
+  }
+
+  return ((data ?? []) as Array<any>).map((entry) => {
+    const claimedByRaw = Array.isArray(entry.claimed_by) ? entry.claimed_by[0] : entry.claimed_by;
+
+    return {
+      id: String(entry.id),
+      content: String(entry.content),
+      authorName: String(entry.author_name_snapshot),
+      createdAt: String(entry.created_at),
+      expiresAt: String(entry.expires_at),
+      state: resolveExternalEndorsementClaimState({
+        status: entry.status,
+        expires_at: entry.expires_at
+      }),
+      claimedAt: entry.claimed_at ? String(entry.claimed_at) : null,
+      revokedAt: entry.revoked_at ? String(entry.revoked_at) : null,
+      claimedBy: claimedByRaw
+        ? {
+            full_name: typeof claimedByRaw.full_name === 'string' ? claimedByRaw.full_name : null,
+            role: typeof claimedByRaw.role === 'string' ? claimedByRaw.role : null
+          }
+        : null
+    } satisfies ExternalEndorsementClaimRecord;
+  });
 };
 
 const fetchInviteCards = async (
@@ -302,6 +350,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
       session,
       redeemedInvite: null,
       cards: [],
+      externalClaims: [],
       activeCount: 0,
       maxInvites: INVITE_CARD_SLOT_COUNT,
       statusMessage: '초대 기능은 현재 비활성화되어 있습니다.',
@@ -374,7 +423,11 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
   }
 
   const slots = buildInviteSlots(session.user.id);
-  const { cards, activeCount } = await fetchInviteCards(locals, session.user.id, slots);
+  const [inviteCardResult, externalClaims] = await Promise.all([
+    fetchInviteCards(locals, session.user.id, slots),
+    fetchExternalClaims(locals, session.user.id)
+  ]);
+  const { cards, activeCount } = inviteCardResult;
 
   const statusParam = url.searchParams.get('status');
   const statusMessage = buildStatusMessage(statusParam, codeParamFromUrl);
@@ -383,6 +436,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
     session,
     redeemedInvite: redeemedSummary,
     cards,
+    externalClaims,
     activeCount,
     maxInvites: slots.length,
     statusMessage,
@@ -442,43 +496,53 @@ export const actions: Actions = {
         generateError: requiresLinkedInviteMessage
       });
     }
+    const hasUnlimitedInviteCapacity = slots.some((slot) => slot.betaUnlimited);
+    const { data: createdInvite, error: createInviteError } = await locals.supabase.rpc(
+      'create_visible_invite',
+      {
+        p_author: session.user.id,
+        p_slot_index: slotDefinition.index,
+        p_max_redemptions: slotDefinition.maxRedemptions,
+        p_beta_unlimited: slotDefinition.betaUnlimited,
+        p_quota: hasUnlimitedInviteCapacity ? null : slots.length
+      }
+    );
 
-    const { data: existingInvite, error: lookupError } = await locals.supabase
-      .from('invites')
-      .select('id, code')
-      .eq('inviter_user_id', session.user.id)
-      .eq('slot_index', slotDefinition.index)
-      .maybeSingle();
+    if (createInviteError) {
+      const normalizedMessage = createInviteError.message.toLowerCase();
 
-    if (lookupError) {
-      console.error('Failed to verify invite slot usage', lookupError);
-    }
+      if (normalizedMessage.includes('invite_slot_taken')) {
+        const { cards, activeCount } = await fetchInviteCards(locals, session.user.id, slots);
+        return fail(400, {
+          success: false,
+          generateError: '이미 발급된 초대권입니다. 사용 기록을 확인해보세요.',
+          cards,
+          activeCount
+        });
+      }
 
-    if (existingInvite) {
-      const { cards, activeCount } = await fetchInviteCards(locals, session.user.id, slots);
-      return fail(400, {
-        success: false,
-        generateError: '이미 발급된 초대권입니다. 사용 기록을 확인해보세요.',
-        cards,
-        activeCount
-      });
-    }
+      if (normalizedMessage.includes('invite_quota_exhausted')) {
+        return fail(400, {
+          success: false,
+          generateError:
+            '사용 가능한 초대 권한이 없어 새 초대 코드를 만들 수 없습니다. 기존 초대권이나 추천 링크 사용 현황을 먼저 확인해주세요.'
+        });
+      }
 
-    const code = createInviteCode();
-
-    const { error } = await locals.supabase.from('invites').insert({
-      code,
-      inviter_user_id: session.user.id,
-      slot_index: slotDefinition.index,
-      max_redemptions: slotDefinition.maxRedemptions,
-      beta_unlimited: slotDefinition.betaUnlimited
-    });
-
-    if (error) {
-      console.error('Failed to create invite', error);
+      console.error('Failed to create invite', createInviteError);
       return fail(500, {
         success: false,
         generateError: '초대 코드를 생성할 수 없습니다. 잠시 후 다시 시도해주세요.'
+      });
+    }
+
+    const invitePayload = Array.isArray(createdInvite) ? createdInvite[0] : createdInvite;
+    const code = invitePayload?.code ? String(invitePayload.code) : null;
+
+    if (!code) {
+      return fail(500, {
+        success: false,
+        generateError: '초대 코드를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.'
       });
     }
 
@@ -491,6 +555,132 @@ export const actions: Actions = {
       activeCount,
       highlightSlot: slotDefinition.index,
       statusMessage: `${slotDefinition.title}이(가) 활성화됐어요. 코드를 공유해보세요!`
+    };
+  },
+  createExternalClaim: async ({ locals, request }) => {
+    if (!INVITES_ENABLED) {
+      return fail(400, {
+        success: false,
+        externalClaimError: '현재 초대 기능이 비활성화되어 있습니다.'
+      });
+    }
+
+    const session = await locals.getSession();
+
+    if (!session) {
+      throw redirect(303, '/?authError=signin-required');
+    }
+
+    const { data: linkedInvite } = await locals.supabase
+      .from('invite_redemptions')
+      .select('id')
+      .eq('invitee_user_id', session.user.id)
+      .maybeSingle();
+
+    if (!linkedInvite) {
+      return fail(400, {
+        success: false,
+        externalClaimError: requiresLinkedInviteMessage
+      });
+    }
+
+    const slots = buildInviteSlots(session.user.id);
+    const hasUnlimitedInviteCapacity = slots.some((slot) => slot.betaUnlimited);
+
+    const formData = await request.formData();
+    const content = (formData.get('content') ?? '').toString().trim();
+
+    if (content.length < 20) {
+      return fail(400, {
+        success: false,
+        externalClaimError: '추천 내용은 최소 20자 이상 작성해주세요.',
+        externalClaimValues: { content }
+      });
+    }
+
+    const { data: authorProfile, error: authorProfileError } = await locals.supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+
+    if (authorProfileError) {
+      console.error('Failed to load author profile for external endorsement claim', authorProfileError);
+    }
+
+    const authorName =
+      authorProfile?.full_name ?? session.user.user_metadata.full_name ?? session.user.email ?? '추천인';
+
+    const result = await createExternalEndorsementClaim({
+      authorId: session.user.id,
+      authorName,
+      content,
+      quota: hasUnlimitedInviteCapacity ? null : slots.length
+    });
+
+    const externalClaims = await fetchExternalClaims(locals, session.user.id);
+
+    if (!result.success) {
+      return fail(
+        result.reason === 'server-unavailable'
+          ? 503
+          : result.reason === 'invite-quota-exhausted'
+            ? 400
+            : 500,
+        {
+        success: false,
+        externalClaimError: result.message,
+        externalClaimValues: { content },
+        externalClaims
+        }
+      );
+    }
+
+    return {
+      success: true,
+      externalClaimValues: { content: '' },
+      externalClaims,
+      createdExternalClaimId: result.claim.id,
+      createdExternalClaimToken: result.claim.token,
+      externalClaimStatusMessage:
+        '비회원 추천 링크가 생성되었습니다. 링크를 전달받은 상대는 가입 후 바로 추천서를 받을 수 있습니다.'
+    };
+  },
+  revokeExternalClaim: async ({ locals, request }) => {
+    const session = await locals.getSession();
+
+    if (!session) {
+      throw redirect(303, '/?authError=signin-required');
+    }
+
+    const formData = await request.formData();
+    const claimId = (formData.get('claimId') ?? '').toString().trim();
+
+    if (!claimId) {
+      return fail(400, {
+        success: false,
+        externalClaimError: '철회할 추천 링크를 찾을 수 없습니다.'
+      });
+    }
+
+    const result = await revokeExternalEndorsementClaim({
+      claimId,
+      authorId: session.user.id
+    });
+    const externalClaims = await fetchExternalClaims(locals, session.user.id);
+
+    if (!result.success) {
+      return fail(result.reason === 'generic' || result.reason === 'server-unavailable' ? 500 : 400, {
+        success: false,
+        externalClaimError: result.message,
+        externalClaims
+      });
+    }
+
+    return {
+      success: true,
+      externalClaims,
+      externalClaimStatusMessage: '추천 링크를 철회했습니다.'
     };
   },
   redeem: async ({ request, locals }) => {

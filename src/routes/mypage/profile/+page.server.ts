@@ -1,7 +1,19 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
+const buildClaimStatusMessage = (status: string | null) => {
+  if (status === 'claimed') {
+    return '추천서가 내 계정에 연결되었고 서비스 이용이 활성화되었습니다.';
+  }
+
+  if (status === 'already-linked') {
+    return '이미 같은 추천이 연결되어 있어 기존 추천서를 그대로 유지했습니다.';
+  }
+
+  return null;
+};
+
+export const load: PageServerLoad = async ({ locals, url }) => {
   const session = await locals.getSession();
 
   if (!session) {
@@ -38,6 +50,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     session,
     profile: profile ?? null,
     endorsements: endorsements ?? [],
+    claimStatusMessage: buildClaimStatusMessage(url.searchParams.get('claimStatus')),
     loadError: profileError
       ? '프로필 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
       : endorsementsError

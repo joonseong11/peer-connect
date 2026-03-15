@@ -18,11 +18,15 @@ const session = {
   }
 } as any;
 
-const createCookies = (initialPendingInviteCode?: string | null) => {
+const createCookies = (initial: { pendingInviteCode?: string | null; pendingClaimToken?: string | null } = {}) => {
   const store = new Map<string, string>();
 
-  if (initialPendingInviteCode) {
-    store.set('pending_invite_code', initialPendingInviteCode);
+  if (initial.pendingInviteCode) {
+    store.set('pending_invite_code', initial.pendingInviteCode);
+  }
+
+  if (initial.pendingClaimToken) {
+    store.set('pending_claim_token', initial.pendingClaimToken);
   }
 
   return {
@@ -71,7 +75,7 @@ describe('/auth/callback GET', () => {
     });
 
     const { GET } = await import('./+server');
-    const cookies = createCookies('INVITE42');
+    const cookies = createCookies({ pendingInviteCode: 'INVITE42' });
 
     await expectRedirect(
       () =>
@@ -108,7 +112,7 @@ describe('/auth/callback GET', () => {
     });
 
     const { GET } = await import('./+server');
-    const cookies = createCookies('INVITE42');
+    const cookies = createCookies({ pendingInviteCode: 'INVITE42' });
     const supabase = createSupabaseFromQueue([
       {
         table: 'profiles',
@@ -148,7 +152,7 @@ describe('/auth/callback GET', () => {
     });
 
     const { GET } = await import('./+server');
-    const cookies = createCookies('INVITE42');
+    const cookies = createCookies({ pendingInviteCode: 'INVITE42' });
     const supabase = createSupabaseFromQueue([
       {
         table: 'profiles',
@@ -180,5 +184,68 @@ describe('/auth/callback GET', () => {
     );
 
     expect(cookies.delete).toHaveBeenCalledWith('pending_invite_code', { path: '/' });
+  });
+
+  it('skips invite redemption and onboarding redirects when a pending claim token exists', async () => {
+    const { GET } = await import('./+server');
+    const cookies = createCookies({
+      pendingInviteCode: 'INVITE42',
+      pendingClaimToken: 'claim-token-1'
+    });
+
+    await expectRedirect(
+      () =>
+        GET({
+          url: new URL('http://localhost/auth/callback?code=oauth-code&next=/claim/claim-token-1?claim=continue'),
+          locals: {
+            supabase: {
+              auth: {
+                exchangeCodeForSession: vi.fn().mockResolvedValue({ error: null })
+              }
+            },
+            getSession: vi.fn().mockResolvedValue(session)
+          } as any,
+          cookies
+        } as any),
+      303,
+      '/claim/claim-token-1?claim=continue'
+    );
+
+    expect(redeemInviteCode).not.toHaveBeenCalled();
+  });
+
+  it('clears stale claim cookies when the callback is not returning to a claim route', async () => {
+    const { GET } = await import('./+server');
+    const cookies = createCookies({
+      pendingClaimToken: 'claim-token-1'
+    });
+    const supabase = createSupabaseFromQueue([
+      {
+        table: 'profiles',
+        builder: createQueryBuilder({
+          maybeSingle: { data: null, error: null }
+        })
+      }
+    ]);
+
+    (supabase as any).auth = {
+      exchangeCodeForSession: vi.fn().mockResolvedValue({ error: null })
+    };
+
+    await expectRedirect(
+      () =>
+        GET({
+          url: new URL('http://localhost/auth/callback?code=oauth-code&next=/mypage'),
+          locals: {
+            supabase,
+            getSession: vi.fn().mockResolvedValue(session)
+          } as any,
+          cookies
+        } as any),
+      303,
+      '/profile?onboarding=1'
+    );
+
+    expect(cookies.delete).toHaveBeenCalledWith('pending_claim_token', { path: '/' });
   });
 });
