@@ -13,6 +13,7 @@ export const createQueryBuilder = (options: QueryBuilderOptions = {}) => {
   const builder = {
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
+    neq: vi.fn(() => builder),
     order: vi.fn(() => builder),
     insert: vi.fn(() => builder),
     update: vi.fn(() => builder),
@@ -49,6 +50,26 @@ export const createSupabaseFromQueue = (
       }
 
       return next.builder;
+    })
+  };
+};
+
+export const createSupabaseByTable = (
+  entries: Record<string, Array<ReturnType<typeof createQueryBuilder>>>
+) => {
+  const queues = new Map(
+    Object.entries(entries).map(([table, builders]) => [table, [...builders]] as const)
+  );
+
+  return {
+    from: vi.fn((table: string) => {
+      const builders = queues.get(table) as Array<ReturnType<typeof createQueryBuilder>> | undefined;
+
+      if (!builders || builders.length === 0) {
+        throw new Error(`Unexpected Supabase table access: ${table}`);
+      }
+
+      return builders.shift() as ReturnType<typeof createQueryBuilder>;
     })
   };
 };
