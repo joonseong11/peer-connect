@@ -11,7 +11,11 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "prettier --write .",
-    "backfill:profile-emails": "node scripts/backfill-profile-emails.mjs"
+    "backfill:profile-emails": "node scripts/backfill-profile-emails.mjs",
+    "db:pull": "supabase db pull",
+    "db:push": "supabase db push",
+    "db:new": "supabase migration new",
+    "db:reset": "supabase db reset"
   },
   "devDependencies": {
     "@fontsource/fira-mono": "^5.2.7",
