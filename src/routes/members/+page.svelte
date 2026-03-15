@@ -11,6 +11,9 @@
   const defaultAvatar = '/images/default-profile.svg';
   const profiles = (data.profiles ?? []) as DirectoryProfile[];
   const loadError = data.loadError ?? null;
+  const invitesEnabled = Boolean(data.invitesEnabled);
+  const hasLinkedInvite = Boolean(data.invite?.invite_id);
+  const isDirectoryLocked = invitesEnabled && !hasLinkedInvite;
 
   let searchQuery = $state('');
   let sortMode = $state<SortMode>('recent');
@@ -92,14 +95,22 @@
           최근 업데이트, 추천 수, 소개를 기준으로 스캔하기 쉬운 디렉터리 형태로 살펴보세요.
         </p>
       </div>
-      <div class="flex flex-wrap gap-3">
-        <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
-          멤버 {profiles.length}명
+      {#if !isDirectoryLocked}
+        <div class="flex flex-wrap gap-3">
+          <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
+            멤버 {profiles.length}명
+          </div>
+          <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
+            추천 {totalEndorsements}개
+          </div>
         </div>
-        <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
-          추천 {totalEndorsements}개
-        </div>
-      </div>
+      {:else}
+        <p
+          class="rounded-[20px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-peer-paper/80"
+        >
+          초대 코드를 연결하면 멤버 디렉터리를 확인할 수 있습니다.
+        </p>
+      {/if}
       {#if loadError}
         <p
           class="rounded-[20px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-peer-paper/75"
@@ -119,16 +130,33 @@
         </div>
         <div>
           <p class="meta-line text-peer-paper/55">먼저 보면 좋은 멤버</p>
-          <p class="text-xl font-semibold text-peer-paper">프로필은 관계의 시작점입니다</p>
+          <p class="text-xl font-semibold text-peer-paper">
+            {#if isDirectoryLocked}
+              초대 코드를 연결하면 멤버 디렉터리가 열립니다
+            {:else}
+              프로필은 관계의 시작점입니다
+            {/if}
+          </p>
         </div>
       </div>
       <p class="mt-4 text-sm leading-7 text-peer-paper/75">
-        역할만 보는 대신 어떤 협업 맥락에서 추천을 받았는지까지 함께 보면, 더 잘 맞는 동료를 찾기
-        쉬워집니다.
+        {#if isDirectoryLocked}
+          초대 기반으로 운영되는 네트워크인 만큼, 코드 연결을 마친 뒤에만 전체 멤버 목록을 둘러볼 수
+          있습니다.
+        {:else}
+          역할만 보는 대신 어떤 협업 맥락에서 추천을 받았는지까지 함께 보면, 더 잘 맞는 동료를 찾기
+          쉬워집니다.
+        {/if}
       </p>
-      <a class="btn mt-5 w-full bg-white text-peer-ink hover:bg-peer-paperAlt" href="/profile">
-        내 프로필 보완하기
-      </a>
+      {#if isDirectoryLocked}
+        <a class="btn mt-5 w-full bg-white text-peer-ink hover:bg-peer-paperAlt" href="/invite">
+          초대 코드 입력하기
+        </a>
+      {:else}
+        <a class="btn mt-5 w-full bg-white text-peer-ink hover:bg-peer-paperAlt" href="/profile">
+          내 프로필 보완하기
+        </a>
+      {/if}
     </div>
   </section>
 
@@ -140,7 +168,9 @@
         <p class="section-copy">추천이 쌓인 멤버부터 보면 더 잘 맞는 동료를 찾기 쉬워집니다.</p>
       </div>
 
-      {#if featuredProfiles.length === 0}
+      {#if isDirectoryLocked}
+        <div class="empty-panel">멤버 목록은 초대 코드를 연결한 뒤에 확인할 수 있습니다.</div>
+      {:else if featuredProfiles.length === 0}
         <div class="empty-panel">아직 추천이 쌓인 멤버가 없습니다.</div>
       {:else}
         <div class="space-y-3">
@@ -176,12 +206,19 @@
           <p class="section-kicker">멤버 목록</p>
           <h2 class="headline-balance text-3xl">멤버 디렉터리</h2>
           <p class="section-copy">
-            최근 활동과 추천 신호를 기준으로 빠르게 비교하고, 상세 프로필에서 협업의 결을 더
-            살펴보세요.
+            {#if isDirectoryLocked}
+              초대 코드 연결을 완료하면 전체 멤버를 탐색하고, 상세 프로필에서 협업의 결을 살펴볼 수
+              있습니다.
+            {:else}
+              최근 활동과 추천 신호를 기준으로 빠르게 비교하고, 상세 프로필에서 협업의 결을 더
+              살펴보세요.
+            {/if}
           </p>
         </div>
 
-        <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px]">
+        <div
+          class={`grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px] ${isDirectoryLocked ? 'opacity-60' : ''}`}
+        >
           <label class="relative block">
             <Search
               class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-peer-copyMuted"
@@ -191,12 +228,13 @@
               type="search"
               bind:value={searchQuery}
               placeholder="이름, 역할, 소개로 검색"
+              disabled={isDirectoryLocked}
             />
           </label>
 
           <label class="block">
             <span class="visually-hidden">정렬 기준</span>
-            <select class="field-shell" bind:value={sortMode}>
+            <select class="field-shell" bind:value={sortMode} disabled={isDirectoryLocked}>
               <option value="recent">최근 업데이트순</option>
               <option value="endorsements">추천 많은 순</option>
             </select>
@@ -204,7 +242,49 @@
         </div>
       </div>
 
-      {#if filteredProfiles.length === 0}
+      {#if isDirectoryLocked}
+        <div
+          class="relative overflow-hidden rounded-[24px] border border-peer-stone bg-peer-paperAlt p-6"
+        >
+          <div class="space-y-4 blur-[3px] select-none">
+            {#each Array(3) as _, index}
+              <div
+                class="rounded-[20px] border border-peer-stone bg-white p-5 shadow-panel"
+                aria-hidden="true"
+              >
+                <div class="flex items-start gap-4">
+                  <div class="h-16 w-16 rounded-[20px] bg-peer-paperAlt"></div>
+                  <div class="flex-1 space-y-3">
+                    <div class="h-5 w-40 rounded-full bg-peer-paperAlt"></div>
+                    <div class="h-4 w-56 rounded-full bg-peer-paperAlt"></div>
+                    <div class="flex gap-2">
+                      <div class="h-6 w-20 rounded-full bg-peer-paperAlt"></div>
+                      <div class="h-6 w-24 rounded-full bg-peer-paperAlt"></div>
+                    </div>
+                    <div class="h-4 w-full rounded-full bg-peer-paperAlt"></div>
+                    <div class="h-4 w-4/5 rounded-full bg-peer-paperAlt"></div>
+                  </div>
+                </div>
+              </div>
+            {/each}
+          </div>
+          <div class="absolute inset-0 flex items-center justify-center bg-white/55 p-6">
+            <div class="section-shell max-w-md text-center shadow-panelLg">
+              <p class="section-kicker">초대 코드 필요</p>
+              <h3 class="headline-balance text-2xl">
+                초대 코드를 연결하면 멤버 디렉터리가 열립니다
+              </h3>
+              <p class="mt-3 text-sm leading-7 text-peer-copySoft">
+                Peer Connect는 초대 기반으로 운영됩니다. 코드 연결을 완료하면 전체 멤버 목록을
+                둘러볼 수 있습니다.
+              </p>
+              <div class="mt-5 flex justify-center">
+                <a class="btn btn-primary" href="/invite">초대 코드 입력하기</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {:else if filteredProfiles.length === 0}
         <div class="empty-panel">
           <p class="font-semibold text-peer-ink">조건에 맞는 멤버가 없습니다.</p>
           <p class="mt-2 text-sm text-peer-copySoft">

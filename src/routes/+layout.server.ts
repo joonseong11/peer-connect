@@ -147,10 +147,6 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   const isAuthRoute = url.pathname.startsWith('/auth');
   const isMembersRoute = url.pathname.startsWith('/members');
 
-  if (requireInvite && !isInvitePage && !isProfilePage && !isAuthRoute && !isMembersRoute) {
-    throw redirect(303, '/invite');
-  }
-
   // if (!requireInvite && requiresProfileCompletion && !isProfilePage && !isAuthRoute) {
   // 	throw redirect(303, '/profile?onboarding=1');
   // }
@@ -158,6 +154,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   return {
     session,
     invite: redemptionPayload,
-    invitesEnabled: INVITES_ENABLED
+    invitesEnabled: INVITES_ENABLED,
+    inviteGateActive: requireInvite
   };
 };

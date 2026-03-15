@@ -19,6 +19,7 @@ declare global {
       authErrorMessage?: string | null;
       authRedirectTarget?: string | null;
       invitesEnabled?: boolean;
+      inviteGateActive?: boolean;
       inviteePrompt?: {
         redemptionId: string;
         inviteeUserId: string;

@@ -9,7 +9,7 @@
 
   const trustSignals = [
     { value: 'Invite only', label: '초대 기반 운영' },
-    { value: 'Profiles', label: '프로필 중심 신뢰' },
+    { value: '프로필로 확인', label: '프로필 중심 신뢰' },
     { value: 'Endorsements', label: '추천으로 쌓는 맥락' },
     { value: '모임으로 연결', label: '교류가 이어지는 모임' }
   ];
@@ -80,6 +80,12 @@
   const profileCard = $derived(homeData?.profile ?? null);
   const publicProfileHref = $derived(
     session?.user?.id ? `/members/${session.user.id}` : '/profile'
+  );
+  const hasPersonalSummary = $derived(
+    Boolean(profileCard?.updated_at) ||
+      (profileSummary?.profileCompletion ?? 0) > 0 ||
+      (profileSummary?.endorsementCount ?? 0) > 0 ||
+      (profileSummary?.recentGatheringCount ?? 0) > 0
   );
   let authError = $state<string | null>(data.authErrorMessage ?? null);
   let supabase: SupabaseClient | null = null;
@@ -200,17 +206,25 @@
           </p>
         </div>
 
-        <div class="flex flex-wrap gap-3">
-          <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
-            받은 추천 {profileSummary?.endorsementCount ?? 0}개
+        {#if hasPersonalSummary}
+          <div class="flex flex-wrap gap-3">
+            <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
+              받은 추천 {profileSummary?.endorsementCount ?? 0}개
+            </div>
+            <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
+              최근 열린 모임 {profileSummary?.recentGatheringCount ?? 0}개
+            </div>
+            <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
+              프로필 완성도 {profileSummary?.profileCompletion ?? 0}%
+            </div>
           </div>
-          <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
-            최근 열린 모임 {profileSummary?.recentGatheringCount ?? 0}개
-          </div>
-          <div class="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">
-            프로필 완성도 {profileSummary?.profileCompletion ?? 0}%
-          </div>
-        </div>
+        {:else}
+          <p
+            class="rounded-[20px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-peer-paper/80"
+          >
+            추천과 활동이 쌓이면 이곳에 개인 요약이 표시됩니다.
+          </p>
+        {/if}
 
         {#if homeData?.homeError}
           <p
@@ -230,8 +244,12 @@
             alt="내 프로필 이미지"
           />
           <div class="space-y-1">
-            <h2 class="text-2xl text-peer-paper">{profileCard?.full_name ?? '멤버'}</h2>
-            <p class="text-sm text-peer-paper/70">{profileCard?.role}</p>
+            <h2 class="text-2xl text-peer-paper">
+              {hasPersonalSummary ? profileCard?.full_name : '내 프로필'}
+            </h2>
+            <p class="text-sm text-peer-paper/70">
+              {hasPersonalSummary ? profileCard?.role : '공개 프로필과 추천서 현황을 확인해보세요'}
+            </p>
           </div>
         </div>
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
@@ -416,32 +434,34 @@
           </a>
         </aside>
 
-        <aside class="section-shell space-y-4">
-          <div class="flex items-center gap-2 text-peer-copy">
-            <UserRound class="h-4 w-4" />
-            <p class="meta-line text-peer-copyMuted">내 활동 요약</p>
-          </div>
-          <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <div class="surface-panel-muted space-y-2">
-              <p class="meta-line">프로필 완성도</p>
-              <p class="text-2xl font-semibold text-peer-ink">
-                {profileSummary?.profileCompletion ?? 0}%
-              </p>
+        {#if hasPersonalSummary}
+          <aside class="section-shell space-y-4">
+            <div class="flex items-center gap-2 text-peer-copy">
+              <UserRound class="h-4 w-4" />
+              <p class="meta-line text-peer-copyMuted">내 활동 요약</p>
             </div>
-            <div class="surface-panel-muted space-y-2">
-              <p class="meta-line">받은 추천</p>
-              <p class="text-2xl font-semibold text-peer-ink">
-                {profileSummary?.endorsementCount ?? 0}개
-              </p>
+            <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+              <div class="surface-panel-muted space-y-2">
+                <p class="meta-line">프로필 완성도</p>
+                <p class="text-2xl font-semibold text-peer-ink">
+                  {profileSummary?.profileCompletion ?? 0}%
+                </p>
+              </div>
+              <div class="surface-panel-muted space-y-2">
+                <p class="meta-line">받은 추천</p>
+                <p class="text-2xl font-semibold text-peer-ink">
+                  {profileSummary?.endorsementCount ?? 0}개
+                </p>
+              </div>
+              <div class="surface-panel-muted space-y-2">
+                <p class="meta-line">최근 모임</p>
+                <p class="text-2xl font-semibold text-peer-ink">
+                  {profileSummary?.recentGatheringCount ?? 0}개
+                </p>
+              </div>
             </div>
-            <div class="surface-panel-muted space-y-2">
-              <p class="meta-line">최근 모임</p>
-              <p class="text-2xl font-semibold text-peer-ink">
-                {profileSummary?.recentGatheringCount ?? 0}개
-              </p>
-            </div>
-          </div>
-        </aside>
+          </aside>
+        {/if}
       </div>
     </section>
   {:else}

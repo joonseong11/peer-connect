@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createQueryBuilder, createSupabaseByTable } from '../test/support/supabase';
-import { expectRedirect } from '../test/support/sveltekit';
 
 const configState = {
   invitesEnabled: true
@@ -41,7 +40,7 @@ describe('root layout load', () => {
     });
   });
 
-  it('creates a default profile and redirects to invite when invite linkage is required', async () => {
+  it('creates a default profile and enables the invite gate when invite linkage is required', async () => {
     hasProfileEmailColumn.mockResolvedValue(true);
     const session = {
       user: {
@@ -72,15 +71,17 @@ describe('root layout load', () => {
 
     const { load } = await import('./+layout.server');
 
-    await expectRedirect(
-      () =>
-        load({
-          locals: { getSession: vi.fn().mockResolvedValue(session), supabase },
-          url: new URL('http://localhost/gatherings')
-        } as any),
-      303,
-      '/invite'
-    );
+    await expect(
+      load({
+        locals: { getSession: vi.fn().mockResolvedValue(session), supabase },
+        url: new URL('http://localhost/gatherings')
+      } as any)
+    ).resolves.toEqual({
+      session,
+      invite: null,
+      invitesEnabled: true,
+      inviteGateActive: true
+    });
 
     expect(insertBuilder.insert).toHaveBeenCalledWith({
       user_id: 'user-1',
@@ -145,7 +146,8 @@ describe('root layout load', () => {
         invite_id: 'invite-1',
         inviter_user_id: 'inviter-1'
       },
-      invitesEnabled: true
+      invitesEnabled: true,
+      inviteGateActive: false
     });
 
     expect(updateBuilder.update).toHaveBeenCalledWith({

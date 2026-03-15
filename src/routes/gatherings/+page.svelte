@@ -305,7 +305,9 @@
           </span>
         </div>
         <div class="mt-5 space-y-3">
-          <h2 class="text-2xl font-semibold leading-tight sm:text-[2rem]">
+          <h2
+            class="headline-balance text-2xl font-semibold leading-tight text-white sm:text-[2rem]"
+          >
             {featuredPost.title}
           </h2>
           <p class="max-w-3xl text-sm leading-7 text-slate-200 sm:text-base">
@@ -333,7 +335,7 @@
           <a href={`/gatherings/${featuredPost.id}`} class="btn btn-primary">자세히 보기</a>
           <a
             href="/gatherings/new"
-            class="btn btn-secondary border-white/20 text-white hover:bg-white/10"
+            class="btn btn-secondary border-white/15 bg-white/10 text-peer-paper hover:bg-white/15"
             >이 흐름 이어가기</a
           >
         </div>
