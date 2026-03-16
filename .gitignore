@@ -28,4 +28,3 @@ vite.config.ts.timestamp-*
 
 # Local QA helpers
 src/routes/auth/dev-login/
-scripts/seed-dev-members.mjs

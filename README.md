@@ -259,6 +259,32 @@ pnpm backfill:profile-emails
 
 `--dry-run` 옵션을 쓰면 변동 대상과 개수가 로그로 표시되고 DB에는 쓰지 않습니다.
 
+### Development Seed Script
+
+개발용 데모 계정과 예시 프로필/추천/모임 데이터를 빠르게 채우려면 아래 스크립트를 사용할 수 있습니다.
+
+```bash
+# 기본 20명 시드
+pnpm seed:dev-members
+
+# 다른 네임스페이스로 시드
+pnpm seed:dev-members -- --namespace=my-local-seed --invite-code=MYLOCAL20260316
+
+# 실제 반영 전 미리보기
+pnpm seed:dev-members -- --dry-run
+```
+
+스크립트 파일:
+
+- `scripts/seed-dev-members.mjs`
+
+주의사항:
+
+- 이 스크립트는 개발/테스트용입니다.
+- `PUBLIC_SUPABASE_URL`이 허용된 개발 호스트가 아니면 실행을 거부합니다.
+- Supabase 서비스 역할 키가 필요하므로, 운영 환경 변수와 함께 실행하지 마세요.
+- 실행 시 인증 사용자, 프로필, 초대 연결, 추천서, 예시 모임 데이터를 생성하거나 갱신합니다.
+
 ### Account Deletion
 
 회원 탈퇴 기능은 Supabase 인증 사용자를 제거해야 하므로 `SUPABASE_SERVICE_ROLE_KEY` 환경 변수가 설정되어 있어야 합니다. 서비스 역할 키 없이 애플리케이션을 실행하면 탈퇴 요청이 거부됩니다.

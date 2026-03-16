@@ -14,6 +14,7 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "prettier --write .",
     "backfill:profile-emails": "node scripts/backfill-profile-emails.mjs",
+    "seed:dev-members": "node scripts/seed-dev-members.mjs",
     "db:pull": "supabase db pull",
     "db:push": "supabase db push",
     "db:new": "supabase migration new",
