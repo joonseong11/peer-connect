@@ -372,7 +372,7 @@
 
         <section id="endorsement-feed" class="section-shell space-y-5">
           <div class="space-y-1">
-            <p class="section-kicker">Endorsement Feed</p>
+            <p class="section-kicker">추천 목록</p>
             <h2 class="text-3xl">동료 추천 목록</h2>
           </div>
 
@@ -503,7 +503,7 @@
 
         <aside class="section-shell space-y-4">
           <div class="space-y-1">
-            <p class="section-kicker">Quick Facts</p>
+            <p class="section-kicker">프로필 요약</p>
             <h2 class="text-2xl">프로필 요약</h2>
           </div>
           <div class="grid gap-3">

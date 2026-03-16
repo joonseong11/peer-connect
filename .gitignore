@@ -24,6 +24,8 @@ vite.config.ts.timestamp-*
 
 # Tools
 .omx/
+.codex/
 
 # Local QA helpers
 src/routes/auth/dev-login/
+scripts/seed-dev-members.mjs

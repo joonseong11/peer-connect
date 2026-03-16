@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { ImageUp, Sparkles } from 'lucide-svelte';
   import { onDestroy } from 'svelte';
   import MetaTags from '$lib/components/MetaTags.svelte';
   import type { ActionData, PageData } from './$types';
@@ -112,69 +113,134 @@
   type="website"
 />
 
-<main class="mx-auto flex w-full max-w-xl flex-col gap-6 px-5 pb-16 pt-14 sm:px-8">
-  <section class="glass-panel space-y-4 text-center">
-    <h1 class="text-2xl font-semibold text-peer-navy">프로필 사진 변경</h1>
-    <p class="text-slate-600">나를 잘 나타내는 사진으로 변경해보세요.</p>
-    {#if loadError}
-      <p class="text-sm font-semibold text-rose-500" role="alert">{loadError}</p>
-    {:else if form?.success}
-      <p class="text-sm font-semibold text-peer-indigo" role="status">
-        프로필 사진이 업데이트되었습니다.
-      </p>
-    {/if}
-  </section>
+<main class="page-shell">
+  <section class="surface-panel-strong grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+    <div class="space-y-5">
+      <p class="section-kicker text-peer-paper/70">프로필 사진 변경</p>
+      <div class="space-y-3">
+        <h1 class="headline-balance max-w-3xl text-4xl leading-[1.05] text-peer-paper sm:text-5xl">
+          나를 잘 드러내는 사진으로 프로필을 정리해보세요
+        </h1>
+        <p class="max-w-2xl text-base leading-7 text-peer-paper/75 sm:text-lg">
+          프로필 사진은 공개 프로필과 멤버 탐색에서 가장 먼저 보이는 요소입니다. 또렷하고 자연스러운
+          이미지를 쓰는 편이 좋습니다.
+        </p>
+      </div>
 
-  <form
-    method="post"
-    class="glass-panel flex flex-col items-center gap-6"
-    enctype="multipart/form-data"
-    onsubmit={() => (isSubmitting = true)}
-  >
-    <img
-      class="h-40 w-40 rounded-full border-4 border-slate-200/70 bg-slate-50 object-cover shadow-md"
-      src={previewUrl}
-      alt="프로필 사진 미리보기"
-    />
-
-    <div class="w-full space-y-2 text-center">
-      <label class="btn btn-secondary relative cursor-pointer overflow-hidden">
-        <span>사진 선택하기</span>
-        <input
-          name="avatar"
-          type="file"
-          accept="image/*"
-          onchange={handleAvatarChange}
-          class="absolute inset-0 cursor-pointer opacity-0"
-        />
-      </label>
-      <p class="text-xs text-slate-500">JPG, PNG 등 이미지 파일 · 최대 5MB</p>
-      {#if form?.error}
-        <p class="text-sm font-medium text-rose-500" role="alert">{form.error}</p>
+      {#if loadError}
+        <p
+          class="rounded-[20px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-peer-paper/80"
+          role="alert"
+        >
+          {loadError}
+        </p>
+      {:else if form?.success}
+        <p
+          class="rounded-[20px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-peer-paper/80"
+          role="status"
+        >
+          프로필 사진이 업데이트되었습니다.
+        </p>
       {/if}
     </div>
 
-    <div class="flex w-full gap-3">
-      <button type="submit" class="btn btn-primary flex-1" disabled={isSubmitting}>
-        {#if isSubmitting}
-          <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-              fill="none"
-            />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-          </svg>
-          <span>저장 중…</span>
-        {:else}
-          저장하기
+    <aside class="space-y-4 rounded-[24px] border border-white/10 bg-white/10 p-5">
+      <div class="flex items-center gap-3">
+        <div
+          class="inline-flex h-12 w-12 items-center justify-center rounded-[18px] bg-white/10 text-peer-paper"
+        >
+          <Sparkles class="h-6 w-6" />
+        </div>
+        <div>
+          <p class="meta-line text-peer-paper/60">사진 가이드</p>
+          <p class="text-xl font-semibold text-peer-paper">
+            작고 선명한 이미지가 가장 안정적입니다
+          </p>
+        </div>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+        <div class="rounded-[20px] border border-white/10 bg-white/10 p-4">
+          <p class="meta-line text-peer-paper/60">권장</p>
+          <p class="mt-2 text-sm leading-6 text-peer-paper/75">얼굴이 잘 보이는 정면 사진</p>
+        </div>
+        <div class="rounded-[20px] border border-white/10 bg-white/10 p-4">
+          <p class="meta-line text-peer-paper/60">형식</p>
+          <p class="mt-2 text-sm leading-6 text-peer-paper/75">JPG, PNG 등 이미지 파일</p>
+        </div>
+        <div class="rounded-[20px] border border-white/10 bg-white/10 p-4">
+          <p class="meta-line text-peer-paper/60">용량</p>
+          <p class="mt-2 text-sm leading-6 text-peer-paper/75">최대 5MB, 업로드 전 자동 최적화</p>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+    <form
+      method="post"
+      class="section-shell flex flex-col items-center gap-6"
+      enctype="multipart/form-data"
+      onsubmit={() => (isSubmitting = true)}
+    >
+      <div class="space-y-2 text-center">
+        <p class="section-kicker">미리보기</p>
+        <h2 class="headline-balance text-3xl">새 프로필 사진</h2>
+      </div>
+
+      <img
+        class="h-48 w-48 rounded-full border-4 border-peer-stone bg-peer-paperAlt object-cover shadow-panel"
+        src={previewUrl}
+        alt="프로필 사진 미리보기"
+      />
+
+      <div class="w-full space-y-3 text-center">
+        <label class="btn btn-secondary relative cursor-pointer overflow-hidden">
+          <ImageUp class="h-4 w-4" />
+          <span>사진 선택하기</span>
+          <input
+            name="avatar"
+            type="file"
+            accept="image/*"
+            onchange={handleAvatarChange}
+            class="absolute inset-0 cursor-pointer opacity-0"
+          />
+        </label>
+        <p class="text-xs text-peer-copyMuted">JPG, PNG 등 이미지 파일 · 최대 5MB</p>
+        {#if form?.error}
+          <p class="text-sm font-medium text-peer-danger" role="alert">{form.error}</p>
         {/if}
-      </button>
-      <a class="btn btn-secondary flex-1" href="/mypage/profile">취소</a>
-    </div>
-  </form>
+      </div>
+
+      <div class="flex w-full flex-wrap items-center gap-3 border-t border-peer-stone pt-4">
+        <button type="submit" class="btn btn-primary flex-1" disabled={isSubmitting}>
+          {#if isSubmitting}
+            저장 중…
+          {:else}
+            저장하기
+          {/if}
+        </button>
+        <a class="btn btn-secondary flex-1" href="/mypage/profile">취소</a>
+      </div>
+    </form>
+
+    <aside class="section-shell space-y-4">
+      <div class="flex items-center gap-3">
+        <div
+          class="inline-flex h-11 w-11 items-center justify-center rounded-[18px] bg-peer-paperAlt text-peer-forest"
+        >
+          <ImageUp class="h-5 w-5" />
+        </div>
+        <div>
+          <p class="section-kicker">체크 포인트</p>
+          <h2 class="headline-balance text-2xl">업로드 전에 한 번만 확인하세요</h2>
+        </div>
+      </div>
+      <ul class="space-y-3 text-sm leading-7 text-peer-copySoft">
+        <li>얼굴이나 상반신이 적당히 보이는지</li>
+        <li>배경이 너무 복잡하지 않은지</li>
+        <li>작게 표시돼도 식별이 가능한지</li>
+      </ul>
+    </aside>
+  </div>
 </main>

@@ -377,7 +377,7 @@
           onsubmit={handlePostUpdateSubmit}
         >
           <div class="space-y-2">
-            <p class="section-kicker">Edit post</p>
+            <p class="section-kicker">게시글 수정</p>
             <h2 class="text-3xl">모임 내용 수정</h2>
           </div>
           <label class="flex flex-col gap-2 text-sm font-medium text-peer-copy">
