@@ -11,7 +11,8 @@ const PROFILE_FIELDS = [
   'introduction',
   'contact_linkedin',
   'contact_github',
-  'contact_email'
+  'contact_email',
+  'contact_blog'
 ] as const;
 
 type ProfileField = (typeof PROFILE_FIELDS)[number];
@@ -27,7 +28,7 @@ export const load: PageServerLoad = async ({ locals }) => {
   const emailColumnAvailable = await hasProfileEmailColumn(locals.supabase);
 
   const baseColumns =
-    'full_name, role, career_history, introduction, contact_linkedin, contact_github, contact_email, updated_at';
+    'full_name, role, career_history, introduction, contact_linkedin, contact_github, contact_email, contact_blog, updated_at';
   const selectColumns = emailColumnAvailable ? `${baseColumns}, email` : baseColumns;
 
   const { data: profile, error } = await locals.supabase
@@ -115,6 +116,12 @@ export const actions: Actions = {
       errors.contact_email = '유효한 이메일 주소를 입력해주세요.';
     }
 
+    if (values.contact_blog && !isValidUrl(values.contact_blog)) {
+      errors.contact_blog = '유효한 URL을 입력해주세요.';
+    } else if (values.contact_blog && !values.contact_blog.startsWith('https://')) {
+      errors.contact_blog = 'HTTPS URL만 허용됩니다.';
+    }
+
     if (Object.keys(errors).length > 0) {
       return fail(400, {
         success: false,
@@ -131,6 +138,7 @@ export const actions: Actions = {
       contact_linkedin: values.contact_linkedin || null,
       contact_github: values.contact_github || null,
       contact_email: values.contact_email || null,
+      contact_blog: values.contact_blog || null,
       updated_at: new Date().toISOString()
     };
 
