@@ -47,7 +47,7 @@ export const load: PageServerLoad = async ({ locals, params, url, cookies }) => 
   const { data: profile, error: profileError } = await locals.supabase
     .from('profiles')
     .select(
-      'user_id, full_name, role, career_history, introduction, contact_linkedin, contact_github, contact_email, updated_at, photo_url'
+      'user_id, full_name, role, career_history, introduction, contact_linkedin, contact_github, contact_email, contact_blog, updated_at, photo_url'
     )
     .eq('user_id', targetUserId)
     .maybeSingle();
