@@ -50,6 +50,11 @@ describe('/ home server', () => {
         createQueryBuilder({
           awaited: { data: [], error: null, count: 0 }
         })
+      ],
+      blog_posts: [
+        createQueryBuilder({
+          awaited: { data: [], error: null }
+        })
       ]
     });
 
@@ -84,6 +89,7 @@ describe('/ home server', () => {
         },
         recentMembers: [],
         recentGatherings: [],
+        recentBlogPosts: [],
         homeError: null
       }
     });

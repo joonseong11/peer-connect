@@ -75,6 +75,7 @@
   const homeData = $derived(data.homeData ?? null);
   const recentMembers = $derived(homeData?.recentMembers ?? []);
   const recentGatherings = $derived(homeData?.recentGatherings ?? []);
+  const recentBlogPosts = $derived(homeData?.recentBlogPosts ?? []);
   const nextAction = $derived(homeData?.nextAction ?? null);
   const profileSummary = $derived(homeData?.summary ?? null);
   const profileCard = $derived(homeData?.profile ?? null);
@@ -464,6 +465,56 @@
         {/if}
       </div>
     </section>
+
+    {#if recentBlogPosts && recentBlogPosts.length > 0}
+      <section class="section-shell space-y-4">
+        <div class="flex items-end justify-between gap-4">
+          <div class="space-y-1">
+            <p class="section-kicker">블로그</p>
+            <h2 class="headline-balance text-2xl sm:text-3xl">동료의 최근 글</h2>
+          </div>
+          <a class="meta-line whitespace-nowrap text-peer-forest hover:underline" href="/blog">
+            전체 보기 &rarr;
+          </a>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-3">
+          {#each recentBlogPosts as post}
+            {@const author = Array.isArray(post.author) ? post.author[0] : post.author}
+            <article class="surface-panel flex flex-col gap-3">
+              {#if post.thumbnail_url}
+                <a href={post.url} target="_blank" rel="noopener noreferrer">
+                  <img
+                    class="aspect-[16/9] w-full rounded-[16px] border border-peer-stone object-cover"
+                    src={post.thumbnail_url}
+                    alt={post.title}
+                    loading="lazy"
+                  />
+                </a>
+              {/if}
+              <a
+                class="text-sm font-semibold leading-snug text-peer-ink no-underline hover:underline"
+                href={post.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {post.title}
+              </a>
+              {#if author}
+                <footer class="flex items-center gap-2">
+                  <img
+                    class="h-5 w-5 rounded-full border border-peer-stone object-cover"
+                    src={author.photo_url ?? defaultAvatar}
+                    alt={author.full_name}
+                  />
+                  <span class="text-xs text-peer-copySoft">{author.full_name}</span>
+                </footer>
+              {/if}
+            </article>
+          {/each}
+        </div>
+      </section>
+    {/if}
   {:else}
     <section class="surface-panel-strong grid gap-8 xl:grid-cols-[1.25fr_0.9fr]">
       <div class="space-y-6">

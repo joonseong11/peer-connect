@@ -13,6 +13,7 @@
     { href: '/', label: '홈', match: (path: string) => path === '/' },
     { href: '/members', label: '멤버', match: (path: string) => path.startsWith('/members') },
     { href: '/gatherings', label: '모임', match: (path: string) => path.startsWith('/gatherings') },
+    { href: '/blog', label: '블로그', match: (path: string) => path.startsWith('/blog') },
     ...(invitesEnabled
       ? [{ href: '/invite', label: '초대', match: (path: string) => path.startsWith('/invite') }]
       : []),
