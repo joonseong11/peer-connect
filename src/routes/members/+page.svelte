@@ -61,7 +61,8 @@
         (left: DirectoryProfile, right: DirectoryProfile) =>
           right.endorsement_count - left.endorsement_count
       )
-      .slice(0, 2)
+      .filter((p) => p.endorsement_count > 0)
+      .slice(0, 5)
   );
 
   const totalEndorsements = $derived.by(() =>
@@ -89,10 +90,10 @@
       <div class="space-y-3">
         <p class="section-kicker text-peer-paper/70">멤버 찾기</p>
         <h1 class="headline-balance max-w-3xl text-4xl leading-[1.05] text-peer-paper sm:text-5xl">
-          함께 성장할 동료를 더 쉽게 찾을 수 있도록 정리했습니다.
+          함께 성장할 동료를 한눈에 찾을 수 있는 디렉터리입니다.
         </h1>
         <p class="max-w-2xl text-base leading-7 text-peer-paper/75 sm:text-lg">
-          최근 업데이트, 추천 수, 소개를 기준으로 스캔하기 쉬운 디렉터리 형태로 살펴보세요.
+          최근 활동, 추천 수, 소개를 기준으로 정리되어 있습니다.
         </p>
       </div>
       {#if !isDirectoryLocked}
@@ -108,7 +109,7 @@
         <p
           class="rounded-[20px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-peer-paper/80"
         >
-          초대 코드를 연결하면 멤버 디렉터리를 확인할 수 있습니다.
+          초대 코드를 연결하면 멤버 디렉터리가 열립니다.
         </p>
       {/if}
       {#if loadError}
@@ -129,7 +130,7 @@
           <Users class="h-6 w-6" />
         </div>
         <div>
-          <p class="meta-line text-peer-paper/55">먼저 보면 좋은 멤버</p>
+          <p class="meta-line text-peer-paper/55">추천 멤버</p>
           <p class="text-xl font-semibold text-peer-paper">
             {#if isDirectoryLocked}
               초대 코드를 연결하면 멤버 디렉터리가 열립니다
@@ -141,11 +142,9 @@
       </div>
       <p class="mt-4 text-sm leading-7 text-peer-paper/75">
         {#if isDirectoryLocked}
-          초대 기반으로 운영되는 네트워크인 만큼, 코드 연결을 마친 뒤에만 전체 멤버 목록을 둘러볼 수
-          있습니다.
+          초대 기반 네트워크입니다. 코드 연결을 마치면 전체 멤버 목록을 볼 수 있습니다.
         {:else}
-          역할만 보는 대신 어떤 협업 맥락에서 추천을 받았는지까지 함께 보면, 더 잘 맞는 동료를 찾기
-          쉬워집니다.
+          역할뿐 아니라 어떤 맥락에서 추천을 받았는지까지 확인할 수 있습니다.
         {/if}
       </p>
       {#if isDirectoryLocked}
@@ -160,58 +159,51 @@
     </div>
   </section>
 
-  <section class="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-    <aside class="section-shell space-y-5">
+  {#if !isDirectoryLocked && featuredProfiles.length > 0}
+    <section class="section-shell space-y-5">
       <div class="space-y-2">
         <p class="section-kicker">먼저 볼 멤버</p>
         <h2 class="headline-balance text-2xl">지금 눈여겨볼 멤버</h2>
-        <p class="section-copy">추천이 쌓인 멤버부터 보면 더 잘 맞는 동료를 찾기 쉬워집니다.</p>
+        <p class="section-copy">추천을 많이 받은 멤버입니다.</p>
       </div>
 
-      {#if isDirectoryLocked}
-        <div class="empty-panel">멤버 목록은 초대 코드를 연결한 뒤에 확인할 수 있습니다.</div>
-      {:else if featuredProfiles.length === 0}
-        <div class="empty-panel">아직 추천이 쌓인 멤버가 없습니다.</div>
-      {:else}
-        <div class="space-y-3">
-          {#each featuredProfiles as profile}
-            <a
-              class="surface-panel-muted flex flex-col gap-3 hover:no-underline"
-              href={`/members/${profile.user_id}`}
-            >
-              <div class="flex items-center gap-3">
-                <img
-                  class="h-12 w-12 rounded-[18px] border border-peer-stone bg-white object-cover"
-                  src={profile.photo_url ?? defaultAvatar}
-                  alt={`${profile.full_name} 프로필 이미지`}
-                />
-                <div>
-                  <p class="font-semibold text-peer-ink">{profile.full_name}</p>
-                  <p class="text-sm text-peer-copySoft">{profile.role}</p>
-                </div>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {#each featuredProfiles as profile}
+          <a
+            class="surface-panel-muted flex flex-col gap-3 hover:no-underline"
+            href={`/members/${profile.user_id}`}
+          >
+            <div class="flex items-center gap-3">
+              <img
+                class="h-12 w-12 rounded-[18px] border border-peer-stone bg-white object-cover"
+                src={profile.photo_url ?? defaultAvatar}
+                alt={`${profile.full_name} 프로필 이미지`}
+              />
+              <div class="min-w-0">
+                <p class="truncate font-semibold text-peer-ink">{profile.full_name}</p>
+                <p class="truncate text-sm text-peer-copySoft">{profile.role}</p>
               </div>
-              <div class="flex flex-wrap gap-2">
-                <span class="tag-pill">추천 {profile.endorsement_count}개</span>
-                <span class="tag-pill">업데이트 {formatDate(profile.updated_at)}</span>
-              </div>
-            </a>
-          {/each}
-        </div>
-      {/if}
-    </aside>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="tag-pill">추천 {profile.endorsement_count}개</span>
+              <span class="tag-pill">업데이트 {formatDate(profile.updated_at)}</span>
+            </div>
+          </a>
+        {/each}
+      </div>
+    </section>
+  {/if}
 
-    <section class="section-shell space-y-5">
+  <section class="section-shell space-y-5">
       <div class="flex flex-col gap-4 border-b border-peer-stone pb-5">
         <div class="space-y-2">
           <p class="section-kicker">멤버 목록</p>
           <h2 class="headline-balance text-3xl">멤버 디렉터리</h2>
           <p class="section-copy">
             {#if isDirectoryLocked}
-              초대 코드 연결을 완료하면 전체 멤버를 탐색하고, 상세 프로필에서 협업의 결을 살펴볼 수
-              있습니다.
+              초대 코드를 연결하면 전체 멤버를 탐색할 수 있습니다.
             {:else}
-              최근 활동과 추천 신호를 기준으로 빠르게 비교하고, 상세 프로필에서 협업의 결을 더
-              살펴보세요.
+              최근 활동과 추천을 기준으로 정렬되어 있습니다.
             {/if}
           </p>
         </div>
@@ -275,8 +267,7 @@
                 초대 코드를 연결하면 멤버 디렉터리가 열립니다
               </h3>
               <p class="mt-3 text-sm leading-7 text-peer-copySoft">
-                Peer Connect는 초대 기반으로 운영됩니다. 코드 연결을 완료하면 전체 멤버 목록을
-                둘러볼 수 있습니다.
+                초대 기반 네트워크입니다. 코드를 연결하면 전체 멤버 목록이 열립니다.
               </p>
               <div class="mt-5 flex justify-center">
                 <a class="btn btn-primary" href="/invite">초대 코드 입력하기</a>
@@ -341,5 +332,4 @@
         </div>
       {/if}
     </section>
-  </section>
 </main>
