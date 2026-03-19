@@ -3,6 +3,7 @@
   import { Sparkles, Ticket } from 'lucide-svelte';
   import '../app.css';
   import AppHeader from '$lib/components/AppHeader.svelte';
+  import BottomNav from '$lib/components/BottomNav.svelte';
 
   let { children, data } = $props();
 
@@ -75,7 +76,11 @@
     {/if}
   </div>
 
-  <footer class="border-t border-peer-stone/90 bg-peer-paper/90">
+  {#if data?.session}
+    <BottomNav />
+  {/if}
+
+  <footer class="border-t border-peer-stone/90 bg-peer-paper/90 pb-16 lg:pb-0">
     <div class="mx-auto max-w-6xl px-4 pb-8 pt-7 sm:px-8 lg:px-10">
       <div class="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
         <div class="space-y-1">
