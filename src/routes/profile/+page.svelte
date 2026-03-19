@@ -19,7 +19,8 @@
     introduction: profile?.introduction ?? '',
     contact_linkedin: profile?.contact_linkedin ?? '',
     contact_github: profile?.contact_github ?? '',
-    contact_email: profile?.contact_email ?? ''
+    contact_email: profile?.contact_email ?? '',
+    contact_blog: profile?.contact_blog ?? ''
   };
 
   const submitSucceeded = $derived(form?.success ?? false);
@@ -35,6 +36,7 @@
   let contact_linkedin = $state(initialValues.contact_linkedin);
   let contact_github = $state(initialValues.contact_github);
   let contact_email = $state(initialValues.contact_email);
+  let contact_blog = $state(initialValues.contact_blog);
 
   $effect(() => {
     if (form?.values) {
@@ -45,6 +47,7 @@
       contact_linkedin = form.values.contact_linkedin ?? initialValues.contact_linkedin;
       contact_github = form.values.contact_github ?? initialValues.contact_github;
       contact_email = form.values.contact_email ?? initialValues.contact_email;
+      contact_blog = form.values.contact_blog ?? initialValues.contact_blog;
     }
   });
 
@@ -99,7 +102,8 @@
     [
       { label: 'LinkedIn', value: contact_linkedin.trim() },
       { label: 'GitHub', value: contact_github.trim() },
-      { label: 'Email', value: contact_email.trim() }
+      { label: 'Email', value: contact_email.trim() },
+      { label: '블로그', value: contact_blog.trim() }
     ].filter((item) => item.value.length > 0)
   );
 </script>
@@ -376,6 +380,20 @@
             {#if fieldError('contact_email')}
               <span class="text-sm font-medium text-peer-danger">{fieldError('contact_email')}</span
               >
+            {/if}
+          </label>
+
+          <label class="sm:col-span-2 flex flex-col gap-2 text-sm font-medium text-peer-copy">
+            <span>블로그</span>
+            <input
+              name="contact_blog"
+              type="url"
+              placeholder="https://velog.io/@username"
+              bind:value={contact_blog}
+              class="field-shell"
+            />
+            {#if fieldError('contact_blog')}
+              <span class="text-sm font-medium text-peer-danger">{fieldError('contact_blog')}</span>
             {/if}
           </label>
         </div>

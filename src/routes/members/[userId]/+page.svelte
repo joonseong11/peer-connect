@@ -107,6 +107,15 @@
       });
     }
 
+    if (profile.contact_blog) {
+      items.push({
+        label: '블로그',
+        value: stripProtocol(profile.contact_blog),
+        href: profile.contact_blog,
+        external: true
+      });
+    }
+
     return items;
   });
 

@@ -123,7 +123,8 @@ export const load: PageServerLoad = async ({ locals }) => {
     profileResult,
     memberResult,
     gatheringResult,
-    myEndorsementCountResult
+    myEndorsementCountResult,
+    blogPostsResult
   ] = await Promise.all([
     locals.supabase
       .from('invite_redemptions')
@@ -167,7 +168,14 @@ export const load: PageServerLoad = async ({ locals }) => {
     locals.supabase
       .from('endorsements')
       .select('id', { count: 'exact', head: true })
-      .eq('target_user_id', session.user.id)
+      .eq('target_user_id', session.user.id),
+    locals.supabase
+      .from('blog_posts')
+      .select(
+        'id, title, url, summary, thumbnail_url, published_at, author:profiles!blog_posts_author_id_fkey(user_id, full_name, role, photo_url)'
+      )
+      .order('published_at', { ascending: false })
+      .limit(3)
   ]);
 
   if (invitePromptResult.error) {
@@ -188,6 +196,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 
   if (gatheringResult.error) {
     console.error('Failed to load recent gatherings for home', gatheringResult.error);
+  }
+
+  if (blogPostsResult.error) {
+    console.error('Failed to load blog posts for home', blogPostsResult.error);
   }
 
   if (myEndorsementCountResult.error) {
@@ -313,6 +325,13 @@ export const load: PageServerLoad = async ({ locals }) => {
         endorsementCount: endorsementCounts.get(member.user_id) ?? 0
       })),
       recentGatherings,
+      recentBlogPosts: ((blogPostsResult.data ?? []) as unknown[]).map((post: unknown) => {
+        const p = post as Record<string, unknown>;
+        return {
+          ...p,
+          author: Array.isArray(p.author) ? p.author[0] : p.author
+        };
+      }),
       homeError:
         profileResult.error || memberResult.error || gatheringResult.error
           ? '일부 홈 데이터를 불러오지 못했습니다. 잠시 후 다시 확인해주세요.'
