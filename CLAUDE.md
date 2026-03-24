@@ -9,12 +9,29 @@ Peer Connect는 **신뢰 기반 개발자 네트워크**입니다.
 
 ## Tech Stack
 
+- **구조**: pnpm Workspaces 모노레포 (`apps/*`, `packages/*`)
 - **프레임워크**: SvelteKit (SSR, Svelte 5 runes 문법 사용)
 - **DB/Auth/Storage**: Supabase
-- **스타일링**: Tailwind CSS (커스텀 `peer-*` 디자인 토큰)
+- **스타일링**: Tailwind CSS (커스텀 `peer-*` 디자인 토큰, `packages/shared/src/tailwind.config.cjs`)
 - **이메일**: Resend
-- **배포**: Vercel
+- **배포**: Vercel (각 앱 별도 프로젝트)
 - **패키지 매니저**: pnpm
+
+## Monorepo Structure
+
+```
+apps/
+  web/          — @peer/web: 서비스 앱 (기존 메인 앱)
+  admin/        — @peer/admin: 어드민 앱 (CRUD 관리)
+packages/
+  shared/       — @peer/shared: 공유 서버유틸, 타입, Tailwind 토큰
+supabase/       — 공유 DB 마이그레이션 (루트에 위치)
+```
+
+- **공유 패키지 import**: `@peer/shared/server`, `@peer/shared/utils`, `@peer/shared/config`, `@peer/shared/tailwind`
+- **`$env` 규칙**: 공유 패키지에서는 SvelteKit `$env` 직접 사용 금지. 앱 레이어에서 파라미터로 주입.
+- **빌드**: `pnpm build` (전체), `pnpm --filter @peer/web build` (개별)
+- **개발**: `pnpm dev` (web), `pnpm dev:admin` (admin, port 5174)
 
 ## Conventions
 
@@ -28,15 +45,16 @@ Peer Connect는 **신뢰 기반 개발자 네트워크**입니다.
 ## Key Files
 
 ```
-src/lib/config.ts              — 기능 플래그 (초대 활성화 등)
-src/lib/server/invite.ts       — 초대 시스템 로직
-src/lib/server/externalEndorsement.ts — 외부 추천서 클레임
-src/lib/server/notifications.ts — 이메일 알림
-src/routes/api/badge/           — GitHub 배지 SVG 생성
-src/routes/members/             — 멤버 디렉토리 & 프로필
-src/routes/invite/              — 초대 관리
-src/routes/gatherings/          — 모임 게시판
-.planning/PRODUCT.md            — 프로덕트 비전 & 로드맵
+apps/web/src/lib/config.ts                    — 기능 플래그 (초대 활성화 등)
+apps/web/src/lib/server/invite.ts             — 초대 시스템 로직
+apps/web/src/lib/server/externalEndorsement.ts — 외부 추천서 클레임
+apps/web/src/lib/server/notifications.ts       — 이메일 알림
+apps/web/src/routes/api/badge/                 — GitHub 배지 SVG 생성
+apps/web/src/routes/members/                   — 멤버 디렉토리 & 프로필
+apps/admin/src/hooks.server.ts                 — 어드민 인증 + is_admin 체크
+packages/shared/src/server/                    — 공유 Supabase/이메일 유틸
+packages/shared/src/tailwind.config.cjs        — 디자인 토큰 canonical source
+.planning/PRODUCT.md                           — 프로덕트 비전 & 로드맵
 ```
 
 ## Autonomous Work Guidelines
