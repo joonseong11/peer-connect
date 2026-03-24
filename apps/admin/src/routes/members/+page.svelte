@@ -19,7 +19,7 @@
           <th class="px-4 py-3 font-medium text-peer-copySoft">이름</th>
           <th class="px-4 py-3 font-medium text-peer-copySoft">역할</th>
           <th class="px-4 py-3 font-medium text-peer-copySoft">이메일</th>
-          <th class="px-4 py-3 font-medium text-peer-copySoft">가입일</th>
+          <th class="px-4 py-3 font-medium text-peer-copySoft">최근 수정일</th>
           <th class="px-4 py-3 font-medium text-peer-copySoft">관리자</th>
           <th class="px-4 py-3 font-medium text-peer-copySoft">관리</th>
         </tr>
@@ -31,7 +31,7 @@
             <td class="px-4 py-3 text-peer-copySoft">{member.role ?? '—'}</td>
             <td class="px-4 py-3 text-peer-copySoft">{member.email ?? '—'}</td>
             <td class="px-4 py-3 text-peer-copySoft">
-              {member.created_at ? new Date(member.created_at).toLocaleDateString('ko-KR') : '—'}
+              {member.updated_at ? new Date(member.updated_at).toLocaleDateString('ko-KR') : '—'}
             </td>
             <td class="px-4 py-3">
               {#if member.is_admin}

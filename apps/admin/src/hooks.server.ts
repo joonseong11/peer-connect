@@ -1,5 +1,6 @@
 import { redirect, type Handle } from '@sveltejs/kit';
 import { createSupabaseServerClient } from '$lib/server/supabase';
+import { getSafeNextPath } from '$lib/server/auth';
 
 export const handle: Handle = async ({ event, resolve }) => {
   const supabase = createSupabaseServerClient(event);
@@ -21,18 +22,19 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   // Redirect to login if not authenticated
   if (!session) {
-    throw redirect(303, '/auth/login');
+    const nextPath = getSafeNextPath(`${event.url.pathname}${event.url.search}`);
+    throw redirect(303, `/auth/login?next=${encodeURIComponent(nextPath)}`);
   }
 
   // Check admin role
   const { data: profile } = await supabase
     .from('profiles')
     .select('is_admin')
-    .eq('id', session.user.id)
-    .single();
+    .eq('user_id', session.user.id)
+    .maybeSingle();
 
   if (!profile?.is_admin) {
-    throw redirect(303, '/auth/signout');
+    throw redirect(303, '/auth/signout?reason=not-admin');
   }
 
   return resolve(event);

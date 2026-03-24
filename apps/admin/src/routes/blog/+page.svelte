@@ -34,7 +34,7 @@
                 <ExternalLink size={12} />
               </a>
             </td>
-            <td class="px-4 py-3 text-peer-copySoft">{post.author_name ?? '—'}</td>
+            <td class="px-4 py-3 text-peer-copySoft">{post.author?.full_name ?? '—'}</td>
             <td class="px-4 py-3 text-peer-copySoft">
               {post.published_at
                 ? new Date(post.published_at).toLocaleDateString('ko-KR')

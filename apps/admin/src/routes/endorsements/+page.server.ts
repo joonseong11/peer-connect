@@ -8,8 +8,8 @@ export const load: PageServerLoad = async ({ locals }) => {
       id,
       content,
       created_at,
-      author:profiles!author_id(full_name),
-      target:profiles!target_id(full_name)
+      author:profiles!endorsements_author_id_fkey(full_name),
+      target:profiles!endorsements_target_user_id_fkey(full_name)
     `,
       { count: 'exact' }
     )
@@ -17,7 +17,12 @@ export const load: PageServerLoad = async ({ locals }) => {
     .limit(50);
 
   return {
-    endorsements: endorsements ?? [],
+    endorsements:
+      endorsements?.map((endorsement) => ({
+        ...endorsement,
+        author: Array.isArray(endorsement.author) ? (endorsement.author[0] ?? null) : endorsement.author,
+        target: Array.isArray(endorsement.target) ? (endorsement.target[0] ?? null) : endorsement.target
+      })) ?? [],
     totalCount: count ?? 0
   };
 };

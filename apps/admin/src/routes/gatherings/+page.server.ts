@@ -7,10 +7,10 @@ export const load: PageServerLoad = async ({ locals }) => {
       `
       id,
       title,
-      date,
-      location,
+      content,
+      email_sent,
       created_at,
-      author:profiles!author_id(full_name)
+      author:profiles!gatherings_author_id_fkey(full_name)
     `,
       { count: 'exact' }
     )
@@ -18,7 +18,11 @@ export const load: PageServerLoad = async ({ locals }) => {
     .limit(50);
 
   return {
-    gatherings: gatherings ?? [],
+    gatherings:
+      gatherings?.map((gathering) => ({
+        ...gathering,
+        author: Array.isArray(gathering.author) ? (gathering.author[0] ?? null) : gathering.author
+      })) ?? [],
     totalCount: count ?? 0
   };
 };

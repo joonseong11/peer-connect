@@ -1,5 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
+import { getSupabaseAdminClient } from '$lib/server/supabase';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   const page = Number(url.searchParams.get('page') ?? '1');
@@ -8,10 +9,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
   const { data: members, count } = await locals.supabase
     .from('profiles')
-    .select('id, user_id, full_name, role, email, is_admin, profile_completed_at, created_at', {
+    .select('user_id, full_name, role, email, is_admin, profile_completed_at, updated_at', {
       count: 'exact'
     })
-    .order('created_at', { ascending: false })
+    .order('updated_at', { ascending: false })
     .range(offset, offset + perPage - 1);
 
   return {
@@ -30,7 +31,13 @@ export const actions: Actions = {
 
     if (!userId) return fail(400, { message: 'userId is required' });
 
-    const { error } = await locals.supabase
+    const adminClient = getSupabaseAdminClient();
+
+    if (!adminClient) {
+      return fail(500, { message: 'SUPABASE_SERVICE_ROLE_KEY is required' });
+    }
+
+    const { error } = await adminClient
       .from('profiles')
       .update({ is_admin: !currentValue })
       .eq('user_id', userId);

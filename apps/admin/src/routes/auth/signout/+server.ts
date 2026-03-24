@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ locals }) => {
+const signOut: RequestHandler = async ({ locals, url }) => {
   const { error } = await locals.supabase.auth.signOut();
 
   if (error) {
@@ -9,5 +9,15 @@ export const POST: RequestHandler = async ({ locals }) => {
     return new Response('로그아웃에 실패했습니다.', { status: 500 });
   }
 
-  throw redirect(303, '/auth/login');
+  const reason = url.searchParams.get('reason');
+  const loginUrl = new URL('/auth/login', url.origin);
+
+  if (reason === 'not-admin') {
+    loginUrl.searchParams.set('error', 'not-admin');
+  }
+
+  throw redirect(303, `${loginUrl.pathname}${loginUrl.search}`);
 };
+
+export const GET = signOut;
+export const POST = signOut;

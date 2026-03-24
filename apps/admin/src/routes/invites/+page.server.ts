@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ locals }) => {
       id,
       code,
       created_at,
-      inviter:profiles!inviter_id(full_name)
+      inviter:profiles!invites_inviter_user_id_fkey(full_name)
     `,
       { count: 'exact' }
     )
@@ -16,7 +16,11 @@ export const load: PageServerLoad = async ({ locals }) => {
     .limit(50);
 
   return {
-    invites: invites ?? [],
+    invites:
+      invites?.map((invite) => ({
+        ...invite,
+        inviter: Array.isArray(invite.inviter) ? (invite.inviter[0] ?? null) : invite.inviter
+      })) ?? [],
     totalCount: count ?? 0
   };
 };
