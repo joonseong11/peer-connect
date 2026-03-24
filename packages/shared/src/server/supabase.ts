@@ -1,10 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import type { RequestEvent } from '@sveltejs/kit';
-import { getSupabaseConfig } from '$lib/supabase/config';
 
-export const createSupabaseServerClient = (event: RequestEvent) => {
-  const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig();
-
+export const createSupabaseServerClient = (
+  supabaseUrl: string,
+  supabaseAnonKey: string,
+  event: RequestEvent
+) => {
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get: (key) => event.cookies.get(key),

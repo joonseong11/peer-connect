@@ -1,0 +1,16 @@
+{
+  "name": "@peer/shared",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./server": "./src/server/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./config": "./src/config/index.ts",
+    "./tailwind": "./src/tailwind.config.cjs"
+  },
+  "peerDependencies": {
+    "@supabase/ssr": ">=0.7.0",
+    "@supabase/supabase-js": ">=2.75.0"
+  }
+}
