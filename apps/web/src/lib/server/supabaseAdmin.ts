@@ -1,29 +1,13 @@
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { getSupabaseConfig } from '$lib/supabase/config';
+import { env } from '$env/dynamic/public';
+import { createSupabaseAdminClient } from '@peer/shared/server';
 
-let adminClient: SupabaseClient | null = null;
-let warnedMissingServiceRole = false;
+export const getSupabaseAdminClient = () => {
+  const supabaseUrl = env.PUBLIC_SUPABASE_URL;
 
-export const getSupabaseAdminClient = (): SupabaseClient | null => {
-  if (!SUPABASE_SERVICE_ROLE_KEY) {
-    if (!warnedMissingServiceRole) {
-      console.warn(
-        '[supabase-admin] SUPABASE_SERVICE_ROLE_KEY is not configured; falling back to limited client.'
-      );
-      warnedMissingServiceRole = true;
-    }
-    return null;
+  if (!supabaseUrl) {
+    throw new Error('PUBLIC_SUPABASE_URL이 설정되지 않았습니다.');
   }
 
-  if (!adminClient) {
-    const { supabaseUrl } = getSupabaseConfig();
-    adminClient = createClient(supabaseUrl, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: {
-        persistSession: false
-      }
-    });
-  }
-
-  return adminClient;
+  return createSupabaseAdminClient(supabaseUrl, SUPABASE_SERVICE_ROLE_KEY);
 };

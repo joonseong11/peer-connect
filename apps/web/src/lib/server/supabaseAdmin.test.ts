@@ -4,9 +4,8 @@ const envState = {
   serviceRole: ''
 };
 
-const { createClient, getSupabaseConfig } = vi.hoisted(() => ({
-  createClient: vi.fn(),
-  getSupabaseConfig: vi.fn()
+const { createSupabaseAdminClient } = vi.hoisted(() => ({
+  createSupabaseAdminClient: vi.fn()
 }));
 
 vi.mock('$env/static/private', () => ({
@@ -15,12 +14,14 @@ vi.mock('$env/static/private', () => ({
   }
 }));
 
-vi.mock('@supabase/supabase-js', () => ({
-  createClient
+vi.mock('$env/dynamic/public', () => ({
+  env: {
+    PUBLIC_SUPABASE_URL: 'https://supabase.test'
+  }
 }));
 
-vi.mock('$lib/supabase/config', () => ({
-  getSupabaseConfig
+vi.mock('@peer/shared/server', () => ({
+  createSupabaseAdminClient
 }));
 
 describe('getSupabaseAdminClient', () => {
@@ -28,33 +29,27 @@ describe('getSupabaseAdminClient', () => {
     vi.resetModules();
     vi.clearAllMocks();
     envState.serviceRole = '';
-    getSupabaseConfig.mockReturnValue({
-      supabaseUrl: 'https://supabase.test'
-    });
   });
 
-  it('returns null and only warns once when the service role key is missing', async () => {
+  it('returns null when the service role key is missing', async () => {
+    createSupabaseAdminClient.mockReturnValue(null);
+
     const { getSupabaseAdminClient } = await import('./supabaseAdmin');
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     expect(getSupabaseAdminClient()).toBeNull();
-    expect(getSupabaseAdminClient()).toBeNull();
-    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(createSupabaseAdminClient).toHaveBeenCalledWith('https://supabase.test', '');
   });
 
-  it('creates and caches the admin client when the service role key is present', async () => {
+  it('creates the admin client when the service role key is present', async () => {
     envState.serviceRole = 'service-role-key';
-    createClient.mockReturnValue({ admin: true });
+    createSupabaseAdminClient.mockReturnValue({ admin: true });
 
     const { getSupabaseAdminClient } = await import('./supabaseAdmin');
 
     expect(getSupabaseAdminClient()).toEqual({ admin: true });
-    expect(getSupabaseAdminClient()).toEqual({ admin: true });
-    expect(createClient).toHaveBeenCalledTimes(1);
-    expect(createClient).toHaveBeenCalledWith('https://supabase.test', 'service-role-key', {
-      auth: {
-        persistSession: false
-      }
-    });
+    expect(createSupabaseAdminClient).toHaveBeenCalledWith(
+      'https://supabase.test',
+      'service-role-key'
+    );
   });
 });

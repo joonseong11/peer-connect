@@ -1,30 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createServerClient, getSupabaseConfig } = vi.hoisted(() => ({
-  createServerClient: vi.fn(),
-  getSupabaseConfig: vi.fn()
+const { createSupabaseServerClient: _createSupabaseServerClient } = vi.hoisted(() => ({
+  createSupabaseServerClient: vi.fn()
 }));
 
-vi.mock('@supabase/ssr', () => ({
-  createServerClient
+vi.mock('$env/dynamic/public', () => ({
+  env: {
+    PUBLIC_SUPABASE_URL: 'https://supabase.test',
+    PUBLIC_SUPABASE_ANON_KEY: 'anon-key'
+  }
 }));
 
-vi.mock('$lib/supabase/config', () => ({
-  getSupabaseConfig
+vi.mock('@peer/shared/server', () => ({
+  createSupabaseServerClient: _createSupabaseServerClient
 }));
 
 describe('createSupabaseServerClient', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    getSupabaseConfig.mockReturnValue({
-      supabaseUrl: 'https://supabase.test',
-      supabaseAnonKey: 'anon-key'
-    });
   });
 
   it('creates a server client wired to SvelteKit cookie helpers', async () => {
-    createServerClient.mockReturnValue({ client: true });
+    _createSupabaseServerClient.mockReturnValue({ client: true });
 
     const { createSupabaseServerClient } = await import('./supabase');
     const event = {
@@ -36,20 +34,12 @@ describe('createSupabaseServerClient', () => {
     } as any;
 
     const client = createSupabaseServerClient(event);
-    const options = createServerClient.mock.calls[0][2];
 
     expect(client).toEqual({ client: true });
-    expect(createServerClient).toHaveBeenCalledWith(
+    expect(_createSupabaseServerClient).toHaveBeenCalledWith(
       'https://supabase.test',
       'anon-key',
-      expect.any(Object)
+      event
     );
-
-    expect(options.cookies.get('sb')).toBe('cookie-value');
-    options.cookies.set('sb', 'next', { secure: true });
-    options.cookies.remove('sb', { secure: true });
-
-    expect(event.cookies.set).toHaveBeenCalledWith('sb', 'next', { secure: true, path: '/' });
-    expect(event.cookies.delete).toHaveBeenCalledWith('sb', { secure: true, path: '/' });
   });
 });
