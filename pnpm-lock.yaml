@@ -18,6 +18,52 @@ importers:
         specifier: ^2.51.0
         version: 2.51.0
 
+  apps/admin:
+    dependencies:
+      '@peer/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@supabase/ssr':
+        specifier: ^0.7.0
+        version: 0.7.0(@supabase/supabase-js@2.75.0)
+      '@supabase/supabase-js':
+        specifier: ^2.75.0
+        version: 2.75.0
+      lucide-svelte:
+        specifier: ^0.553.0
+        version: 0.553.0(svelte@5.39.12)
+    devDependencies:
+      '@sveltejs/adapter-auto':
+        specifier: ^6.1.0
+        version: 6.1.1(@sveltejs/kit@2.46.5(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.39.12)(vite@7.1.9(@types/node@24.7.2)(jiti@1.21.7)(yaml@2.8.1)))(svelte@5.39.12)(vite@7.1.9(@types/node@24.7.2)(jiti@1.21.7)(yaml@2.8.1)))
+      '@sveltejs/kit':
+        specifier: ^2.43.2
+        version: 2.46.5(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.39.12)(vite@7.1.9(@types/node@24.7.2)(jiti@1.21.7)(yaml@2.8.1)))(svelte@5.39.12)(vite@7.1.9(@types/node@24.7.2)(jiti@1.21.7)(yaml@2.8.1))
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^6.2.0
+        version: 6.2.1(svelte@5.39.12)(vite@7.1.9(@types/node@24.7.2)(jiti@1.21.7)(yaml@2.8.1))
+      autoprefixer:
+        specifier: ^10.4.21
+        version: 10.4.21(postcss@8.5.6)
+      postcss:
+        specifier: ^8.5.6
+        version: 8.5.6
+      svelte:
+        specifier: ^5.39.5
+        version: 5.39.12
+      svelte-check:
+        specifier: ^4.3.2
+        version: 4.3.3(picomatch@4.0.3)(svelte@5.39.12)(typescript@5.9.3)
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.17
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vite:
+        specifier: ^7.1.7
+        version: 7.1.9(@types/node@24.7.2)(jiti@1.21.7)(yaml@2.8.1)
+
   apps/web:
     dependencies:
       '@peer/shared':
